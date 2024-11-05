@@ -289,7 +289,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
                         // ตรวจสอบการล็อกอินก่อนแสดงปุ่มจอง
                         if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
                             // ถ้าล็อกอินแล้ว ให้แสดงปุ่มจองห้องที่สามารถคลิกได้
-                            echo "<button class='btn btn-outline-dark m-1'>จองห้อง</button>";
+                            echo "<button class='btn btn-outline-dark m-1' onclick=\"window.location.href='booking_form.php';\">จองห้อง</button>";
                         } else {
                             // ถ้ายังไม่ได้ล็อกอิน ให้ปุ่มจองพาไปยังหน้าเข้าสู่ระบบ
                             echo "<button class='btn btn-outline-dark m-1' onclick=\"alert('กรุณาเข้าสู่ระบบก่อนจองห้อง'); window.location.href='index.php';\">จองห้อง</button>";
