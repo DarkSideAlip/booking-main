@@ -63,6 +63,43 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         padding-bottom: 20px;
     }
 
+    .full-height {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        height: calc(100vh - 56px);
+        position: relative;
+        padding-top: 60px;
+        padding-bottom: 20px;
+        flex-grow: 1;
+        overflow: auto;
+        padding-bottom: 20px;
+    }
+
+    .text-center {
+        color: white;
+        padding: 20px;
+        border-radius: 5px 5px 0 0;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        border: 1px solid #e0e0e0;
+        max-width: 1200px;
+        width: 100%;
+
+    }
+
+    .container-custom {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        max-width: 1200px;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
     /* Navbar brand logo */
     .navbar-brand .responsive-img {
         max-width: 100%;
@@ -110,7 +147,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -140,9 +177,9 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
                         <ul class="dropdown-menu" aria-labelledby="myBookingsDropdown">
                             <li><a class="dropdown-item <?php echo (basename($_SERVER['PHP_SELF']) == 'upcoming_bookings.php') ? 'active' : ''; ?>"
                                     href="upcoming_bookings.php">รอตรวจสอบ</a></li>
-                            <li><a class="dropdown-item <?php echo (basename($_SERVER['PHP_SELF']) == 'disactive_bookings.php') ? 'active' : ''; ?>"
-                                    href="active_bookings.php">อนุมัติ</a></li>
                             <li><a class="dropdown-item <?php echo (basename($_SERVER['PHP_SELF']) == 'active_bookings.php') ? 'active' : ''; ?>"
+                                    href="active_bookings.php">อนุมัติ</a></li>
+                            <li><a class="dropdown-item <?php echo (basename($_SERVER['PHP_SELF']) == 'disactive_bookings.php') ? 'active' : ''; ?>"
                                     href="disactive_bookings.php">ไม่อนุมัติ</a></li>
                         </ul>
                     </li>
@@ -193,18 +230,20 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
                     <?php endif; ?>
                 </ul>
             </div>
+
         </div>
     </nav>
 
+    <div class="full-height">
+        <div class="text-center bg-dark">
+            <div style="font-size: 20px">การตั้งค่า</div>
+        </div>
+        <div class="container-custom">
+
+        </div>
 
 
-
-
-
-
-
-
-
+    </div>
 
 
 

@@ -196,9 +196,9 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
                         <ul class="dropdown-menu" aria-labelledby="myBookingsDropdown">
                             <li><a class="dropdown-item <?php echo (basename($_SERVER['PHP_SELF']) == 'upcoming_bookings.php') ? 'active' : ''; ?>"
                                     href="upcoming_bookings.php">รอตรวจสอบ</a></li>
-                            <li><a class="dropdown-item <?php echo (basename($_SERVER['PHP_SELF']) == 'disactive_bookings.php') ? 'active' : ''; ?>"
-                                    href="active_bookings.php">อนุมัติ</a></li>
                             <li><a class="dropdown-item <?php echo (basename($_SERVER['PHP_SELF']) == 'active_bookings.php') ? 'active' : ''; ?>"
+                                    href="active_bookings.php">อนุมัติ</a></li>
+                            <li><a class="dropdown-item <?php echo (basename($_SERVER['PHP_SELF']) == 'disactive_bookings.php') ? 'active' : ''; ?>"
                                     href="disactive_bookings.php">ไม่อนุมัติ</a></li>
                         </ul>
                     </li>
