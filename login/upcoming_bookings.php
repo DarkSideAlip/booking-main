@@ -96,6 +96,43 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         color: #ffffff;
     }
 
+    .full-height {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        height: calc(100vh - 56px);
+        position: relative;
+        padding-top: 60px;
+        padding-bottom: 20px;
+        flex-grow: 1;
+        overflow: auto;
+        padding-bottom: 20px;
+    }
+
+    .text-center {
+        color: white;
+        padding: 20px;
+        border-radius: 5px 5px 0 0;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        border: 1px solid #e0e0e0;
+        max-width: 1200px;
+        width: 100%;
+
+    }
+
+    .container-custom {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        max-width: 1200px;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
     .footer {
         width: 100%;
         background-color: #f8f9fa;
@@ -196,16 +233,16 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         </div>
     </nav>
 
+    <div class="full-height">
+        <div class="text-center bg-dark">
+            <div style="font-size: 20px">รอตรวจสอบ</div>
+        </div>
+        <div class="container-custom">
+            
+        </div>
 
 
-
-
-
-
-
-
-
-
+    </div>
 
 
     <!-- Footer -->
