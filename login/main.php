@@ -11,6 +11,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>หน้าหลัก</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
     @media (max-width: 991px) {
         #navbarNav {
@@ -58,6 +59,141 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     .nav-link {
         padding-top: 0.5rem;
         padding-bottom: 0.5rem;
+    }
+
+    .calendar {
+        width: 400px;
+        background-color: white;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        text-align: center;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+
+    }
+
+    .header button {
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 5px;
+        color: #333;
+        cursor: pointer;
+    }
+
+    .day {
+        background-color: #ffffff;
+        color: #333;
+        border-radius: 50%;
+        /* ทำให้ทุกวันที่เป็นวงกลม */
+        padding: 10px;
+        width: 30px;
+        /* กำหนดความกว้างของวงกลม */
+        height: 30px;
+        /* กำหนดความสูงของวงกลม */
+        display: inline-flex;
+        /* จัดให้อยู่กึ่งกลาง */
+        justify-content: center;
+        align-items: center;
+        transition: background-color 0.3s;
+        /* เพิ่มการเปลี่ยนสีอย่างนุ่มนวล */
+    }
+
+    .day:hover {
+        background-color: #e5e7eb;
+        /* เปลี่ยนสีพื้นหลังเป็นสีเทาอ่อนเมื่อชี้เมาส์ */
+    }
+
+    .day.current {
+        background-color: #3b82f6;
+        /* วงกลมสีฟ้าเน้นวันที่ปัจจุบัน */
+        color: white;
+    }
+
+    .container {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        height: calc(100vh - 56px);
+        position: relative;
+        padding-top: 60px;
+        padding-bottom: 20px;
+        flex-grow: 1;
+        overflow: auto;
+        padding-bottom: 20px;
+    }
+
+    .selected {
+        background-color: #10b981;
+        /* สีพื้นหลังเมื่อคลิก (เขียว) */
+        color: white;
+        /* สีตัวอักษรเป็นขาว */
+    }
+
+    .event-container {
+        height: 400px;
+        width: 400px;
+        background-color: #f9fafb;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        margin-left: 20px;
+        overflow-y: auto;
+    }
+
+    .event-title {
+        font-size: 20px;
+        font-weight: bold;
+        color: #374151;
+        border-bottom: 2px solid #d1d5db;
+        padding-bottom: 8px;
+        margin-bottom: 15px;
+    }
+
+    .event-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 6px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        transition: box-shadow 0.3s;
+    }
+
+    .event-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .event-date {
+        font-size: 18px;
+        font-weight: bold;
+        color: #3b82f6;
+        margin-right: 15px;
+    }
+
+    .event-description {
+        color: #374151;
+        font-size: 14px;
+        line-height: 1.4;
+        text-align: left;
+        max-width: 280px;
     }
 
     .footer {
@@ -183,6 +319,26 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         </div>
     </div>
 
+    <div class="container">
+        <div class="calendar">
+            <div class="header">
+                <button onclick="prevMonth()">
+                    <i class="fas fa-angle-left"></i>
+                </button>
+                <h2 id="monthYear"></h2>
+                <button onclick="nextMonth()">
+                    <i class="fas fa-angle-right"></i>
+                </button>
+            </div>
+            <div class="days" id="calendarDays"></div>
+        </div>
+
+        <div class="event-container">
+            <h2 class="event-title">Events for <span id="selectedMonthYear"></span></h2>
+            <div id="eventDetails"></div>
+        </div>
+    </div>
+
     <div class="footer">
         Copyright 2025 © - BangWa Developer
     </div>
@@ -195,6 +351,143 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         var alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
         alertModal.show();
     };
+
+    const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
+        "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+    const daysInWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    let currentDate = new Date();
+
+    const events = {
+        "2024-11-05": {
+            title: "ค่ายส่งเสริมความเป็นเลิศด้านนาฏศิลป์",
+            description: "2 พฤศจิกายน 2024"
+        },
+        "2024-11-04": {
+            title: "นักเรียนที่ลงทะเบียนเรียนซ้ำพร้อมผู้ปกครอง และครูประจำวิชา ประชุมพร้อมกัน ณ หอประชุม เวลา 14.30 น.",
+            description: "4 พฤศจิกายน 2024"
+        },
+        "2024-11-09": {
+            title: "ติวสอบวัดระดับ JLPT, A-level",
+            description: "9 - 10 พฤศจิกายน 2024"
+        },
+    };
+
+    function showEventDetails(month, year) {
+        const eventDetails = document.getElementById("eventDetails");
+        const selectedMonthYear = document.getElementById("selectedMonthYear");
+        selectedMonthYear.innerText = `${monthNames[month]} ${year}`;
+
+        // ล้างข้อมูลเหตุการณ์ก่อนหน้า
+        eventDetails.innerHTML = '';
+
+        // กรองเหตุการณ์ตามเดือนและปีปัจจุบัน
+        for (const [date, event] of Object.entries(events)) {
+            const eventDate = new Date(date);
+            if (eventDate.getMonth() === month && eventDate.getFullYear() === year) {
+                const formattedDate = `${eventDate.getDate()} ${monthNames[eventDate.getMonth()]}`;
+                const eventElement = document.createElement("div");
+                eventElement.classList.add("event-item");
+                eventElement.innerHTML = `
+                <div class="event-date">${formattedDate}</div>
+                <div class="event-description">${event.title} - ${event.description}</div>
+            `;
+                eventDetails.appendChild(eventElement);
+            }
+        }
+
+        // ถ้าไม่มีเหตุการณ์ใดๆ ให้แสดงข้อความ
+        if (eventDetails.innerHTML === '') {
+            eventDetails.innerHTML = '<p>ไม่มีเหตุการณ์สำหรับเดือนนี้</p>';
+        }
+    }
+
+
+    function renderCalendar() {
+        const month = currentDate.getMonth();
+        const year = currentDate.getFullYear();
+        document.getElementById("monthYear").innerText = `${monthNames[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate(); // จำนวนวันของเดือนก่อนหน้า
+
+        const calendarDays = document.getElementById("calendarDays");
+        calendarDays.innerHTML = "";
+
+        // แสดงชื่อวัน (อาทิตย์-เสาร์)
+        daysInWeek.forEach(day => {
+            const dayElement = document.createElement("div");
+            dayElement.classList.add("day");
+            dayElement.textContent = day;
+            calendarDays.appendChild(dayElement);
+        });
+
+        // เติมวันที่ของเดือนก่อนหน้าในช่องว่าง (ไม่ใช้สีเทา)
+        for (let i = firstDay - 1; i >= 0; i--) {
+            const prevDayElement = document.createElement("div");
+            prevDayElement.classList.add("day");
+            prevDayElement.textContent = daysInPrevMonth - i;
+            prevDayElement.classList.add("inactive"); // เพิ่มคลาส inactive สำหรับวันที่เดือนก่อนหน้า
+            calendarDays.appendChild(prevDayElement);
+        }
+
+        // แสดงวันที่ของเดือนปัจจุบัน
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dayElement = document.createElement("div");
+            dayElement.classList.add("day");
+            dayElement.textContent = i;
+
+            // เพิ่มการทำงานเมื่อคลิกวันที่
+            dayElement.addEventListener("click", function() {
+                const dateString = `2024-11-${i.toString().padStart(2, '0')}`;
+                showEventDetails(month, year);
+
+                // ลบคลาส 'selected' จากวันที่ที่เคยเลือกแล้ว
+                const previouslySelected = document.querySelector(".selected");
+                if (previouslySelected) {
+                    previouslySelected.classList.remove("selected");
+                }
+
+                // เพิ่มคลาส 'selected' ให้กับวันที่ที่ถูกคลิก
+                dayElement.classList.add("selected");
+            });
+
+            if (i === currentDate.getDate() && month === new Date().getMonth() && year === new Date().getFullYear()) {
+                dayElement.classList.add("current");
+            }
+
+            calendarDays.appendChild(dayElement);
+        }
+
+        // เติมวันที่ของเดือนถัดไปในช่องว่างที่เหลือ (ไม่ใช้สีเทา)
+        const totalCells = firstDay + daysInMonth;
+        const nextDays = 7 - (totalCells % 7); // จำนวนวันที่ต้องเติมสำหรับเดือนถัดไป
+        if (nextDays < 7) { // ตรวจสอบว่ามีช่องว่างในสัปดาห์สุดท้าย
+            for (let i = 1; i <= nextDays; i++) {
+                const nextDayElement = document.createElement("div");
+                nextDayElement.classList.add("day");
+                nextDayElement.textContent = i;
+                nextDayElement.classList.add("inactive"); // เพิ่มคลาส inactive สำหรับวันที่เดือนถัดไป
+                calendarDays.appendChild(nextDayElement);
+            }
+        }
+
+        // แสดงเหตุการณ์ทั้งหมดสำหรับเดือนนี้
+        showEventDetails(month, year);
+    }
+
+    function prevMonth() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    }
+
+    function nextMonth() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    }
+
+    renderCalendar();
     </script>
 
 </body>
