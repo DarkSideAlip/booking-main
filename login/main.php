@@ -25,6 +25,24 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
             padding: 0;
             height: 100%;
         }
+
+        .container {
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .event-container {
+            width: 100%;
+            /* ทำให้กล่องเหตุการณ์เต็มความกว้าง */
+            margin-top: 20px;
+            /* เพิ่มระยะห่างจากปฏิทิน */
+        }
+
+        .container {
+            margin-top: 80px;
+            margin-bottom: 80px;
+        }
     }
 
     html,
@@ -37,12 +55,16 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     }
 
     body {
+        margin: 0;
+        padding: 0;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
     }
 
     main {
+        margin: 0;
+        padding: 0;
         flex-grow: 1;
     }
 
@@ -62,21 +84,39 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     }
 
     .calendar {
-        width: 400px;
-        background-color: white;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        padding: 20px;
+        margin: 0;
+        padding: 0;
+
+        /* ทำให้เนื้อหาภายในปฏิทินเลื่อนได้ */
+        border: 1px solid #ddd;
+        /* เพิ่มกรอบ */
         border-radius: 8px;
-        border: 1px solid #d1d5db;
-        text-align: center;
+        /* มุมโค้ง */
+        padding: 20px;
+        /* ระยะห่างภายในปฏิทิน */
+        background-color: #f9f9f9;
+        /* สีพื้นหลัง */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        /* เงา */
     }
 
-    .header {
+    .calendar .header {
         display: flex;
         justify-content: space-between;
+        /* กระจายปุ่มซ้ายขวา */
         align-items: center;
-        margin-bottom: 10px;
+        /* จัดให้อยู่กลางแนวตั้ง */
+        margin-bottom: 20px;
+        /* ระยะห่างระหว่าง header และ days */
+    }
 
+    .calendar .header h2 {
+        font-size: 20px;
+        /* ขนาดฟอนต์ */
+        margin: 0;
+        /* ตัด margin */
+        padding: 0;
+        /* ตัด padding */
     }
 
     .header button {
@@ -86,95 +126,151 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         cursor: pointer;
     }
 
-    .days {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 5px;
-        color: #333;
-        cursor: pointer;
+    .calendar .day {
+        text-align: center;
+        /* จัดข้อความให้อยู่กลาง */
+        padding: 10px;
+        /* เพิ่ม padding ของแต่ละช่อง */
+        border-radius: 50%;
+        /* มุมโค้ง */
     }
 
-    .day {
-        background-color: #ffffff;
-        color: #333;
-        border-radius: 50%;
-        /* ทำให้ทุกวันที่เป็นวงกลม */
+    .calendar .days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        /* 7 คอลัมน์ */
+        gap: 10px;
+        /* ระยะห่างระหว่างวัน */
         padding: 10px;
-        width: 30px;
-        /* กำหนดความกว้างของวงกลม */
-        height: 30px;
-        /* กำหนดความสูงของวงกลม */
-        display: inline-flex;
-        /* จัดให้อยู่กึ่งกลาง */
-        justify-content: center;
-        align-items: center;
-        transition: background-color 0.3s;
-        /* เพิ่มการเปลี่ยนสีอย่างนุ่มนวล */
+        /* ระยะห่างรอบ ๆ ตารางวัน */
+        background-color: #fff;
+        /* สีพื้นหลัง */
+        border-radius: 8px;
+        /* มุมโค้ง */
+        position: relative;
+        box-sizing: border-box;
+        /* ไม่ให้ขนาดเปลี่ยนแปลงเมื่อมีการเพิ่ม padding หรือ border */
+        padding: 10px;
+        margin: 0;
+        transition: padding 0.3s ease, transform 0.3s ease;
+        /* ให้การเปลี่ยนแปลง padding และ transform เป็นไปอย่างราบรื่น */
     }
 
     .day:hover {
         background-color: #e5e7eb;
-        /* เปลี่ยนสีพื้นหลังเป็นสีเทาอ่อนเมื่อชี้เมาส์ */
-    }
-
-    .day.current {
-        background-color: #3b82f6;
-        /* วงกลมสีฟ้าเน้นวันที่ปัจจุบัน */
-        color: white;
-    }
-
-    .container {
+        color: #000000;
+        font-weight: bold;
+        border-radius: 50%;
+        padding: auto;
+        /* ทำให้เป็นวงกลม */
+        width: 40px;
+        /* กำหนดความกว้าง */
+        height: 40px;
+        /* กำหนดความสูง */
         display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
+        /* ใช้ flexbox เพื่อให้ข้อความอยู่กลาง */
+        justify-content: center;
+        /* จัดข้อความให้อยู่กลางแนวนอน */
         align-items: center;
-        height: calc(100vh - 56px);
-        position: relative;
-        padding-top: 60px;
-        padding-bottom: 20px;
-        flex-grow: 1;
-        overflow: auto;
-        padding-bottom: 20px;
+        /* จัดข้อความให้อยู่กลางแนวตั้ง */
+        margin: 0 auto;
+        /* จัดให้อยู่กลาง */
+        transform: scale(1.1);
+        /* ขยายขนาดให้ดูเด่นขึ้น แต่ไม่ทำให้ขนาดอื่นๆ เปลี่ยนแปลง */
+        z-index: 2;
+        /* เพิ่มความเด่นให้วันที่เมื่อ hover */
     }
 
-    .selected {
-        background-color: #10b981;
-        /* สีพื้นหลังเมื่อคลิก (เขียว) */
-        color: white;
-        /* สีตัวอักษรเป็นขาว */
+
+    .calendar .day.current {
+        background-color: #0e02b8;
+        color: #fff;
+        font-weight: bold;
+        border-radius: 50%;
+        /* ทำให้เป็นวงกลม */
+        width: 40px;
+        /* กำหนดความกว้าง */
+        height: 40px;
+        /* กำหนดความสูง */
+        display: flex;
+        /* ใช้ flexbox เพื่อให้ข้อความอยู่กลาง */
+        justify-content: center;
+        /* จัดข้อความให้อยู่กลางแนวนอน */
+        align-items: center;
+        /* จัดข้อความให้อยู่กลางแนวตั้ง */
+        margin: 0 auto;
+        /* จัดให้อยู่กลาง */
     }
+
+    .calendar .day.inactive {
+        color: #bbb;
+        padding: auto;
+    }
+
+
+
+    /* ปรับ padding ของ container */
+    .container {
+        height: 100vh;
+        /* ความสูงเต็มหน้าจอ */
+        /* กำหนดความสูงที่ต้องการ */
+        display: flex;
+        overflow-y: auto;
+        /* ทำให้มีการเลื่อนขึ้นลงได้ */
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        /* ระยะห่างระหว่าง calendar และ event-container */
+        padding: 20px;
+        /* ระยะห่างจากขอบ container */
+    }
+
+
+    .calendar .day.selected {
+        background-color: #000000;
+        color: #fff;
+        font-weight: bold;
+        border-radius: 50%;
+        /* ทำให้เป็นวงกลม */
+        width: 40px;
+        /* กำหนดความกว้าง */
+        height: 40px;
+        /* กำหนดความสูง */
+        display: flex;
+        /* ใช้ flexbox เพื่อให้ข้อความอยู่กลาง */
+        justify-content: center;
+        /* จัดข้อความให้อยู่กลางแนวนอน */
+        align-items: center;
+        /* จัดข้อความให้อยู่กลางแนวตั้ง */
+        margin: 0 auto;
+        /* จัดให้อยู่กลาง */
+    }
+
 
     .event-container {
-        height: 400px;
-        width: 400px;
-        background-color: #f9fafb;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        padding: 20px;
+        height: 450px;
+        flex: 1;
+        /* ให้พื้นที่เหมาะสม */
+        border: 1px solid #ddd;
         border-radius: 8px;
-        border: 1px solid #d1d5db;
-        margin-left: 20px;
-        overflow-y: auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
-    .event-title {
-        font-size: 20px;
+    .event-container .event-title {
+        margin-bottom: 20px;
+        font-size: 18px;
         font-weight: bold;
-        color: #374151;
-        border-bottom: 2px solid #d1d5db;
-        padding-bottom: 8px;
-        margin-bottom: 15px;
+        color: #333;
     }
 
-    .event-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .event-container .event-item {
+        margin-bottom: 10px;
         padding: 10px;
-        margin: 10px 0;
-        border-radius: 6px;
-        background-color: #ffffff;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-        transition: box-shadow 0.3s;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #fff;
     }
 
     .event-item:hover {
@@ -182,7 +278,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     }
 
     .event-date {
-        font-size: 18px;
+        font-size: 15px;
         font-weight: bold;
         color: #3b82f6;
         margin-right: 15px;
@@ -190,7 +286,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
     .event-description {
         color: #374151;
-        font-size: 14px;
+        font-size: 12px;
         line-height: 1.4;
         text-align: left;
         max-width: 280px;
@@ -204,6 +300,17 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         padding: 20px;
         font-size: 16px;
         color: #6c757d;
+    }
+
+    #monthYear {
+        font-size: 24px;
+        /* ปรับขนาดฟอนต์เป็น 24px */
+        font-weight: bold;
+        /* ทำให้ตัวหนา (ถ้าต้องการ) */
+        text-align: center;
+        /* จัดข้อความให้อยู่ตรงกลาง */
+        margin: 10px 0;
+        /* เพิ่มระยะห่างระหว่างส่วนหัวกับปฏิทิน */
     }
     </style>
 </head>
@@ -319,23 +426,25 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         </div>
     </div>
 
-    <div class="container">
-        <div class="calendar">
-            <div class="header">
-                <button onclick="prevMonth()">
-                    <i class="fas fa-angle-left"></i>
-                </button>
-                <h2 id="monthYear"></h2>
-                <button onclick="nextMonth()">
-                    <i class="fas fa-angle-right"></i>
-                </button>
+    <div class="full-height">
+        <div class="container container-custom">
+            <div class="calendar">
+                <div class="header">
+                    <button onclick="prevMonth()">
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+                    <h2 id="monthYear"></h2>
+                    <button onclick="nextMonth()">
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+                </div>
+                <div class="days" id="calendarDays"></div>
             </div>
-            <div class="days" id="calendarDays"></div>
-        </div>
-
-        <div class="event-container">
-            <h2 class="event-title">Events for <span id="selectedMonthYear"></span></h2>
-            <div id="eventDetails"></div>
+            
+            <div class="event-container">
+                <h2 class="event-title"><span id="selectedMonthYear"></span></h2>
+                <div id="eventDetails"></div>
+            </div>
         </div>
     </div>
 
@@ -355,7 +464,8 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
         "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
     ];
-    const daysInWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const daysInWeek = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
+
     let currentDate = new Date();
 
     const events = {
@@ -373,10 +483,22 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         },
     };
 
+    // ฟังก์ชัน formatDate สำหรับแปลงวันที่ให้เป็นรูปแบบย่อ
+    const formatDate = (date) => {
+        const options = {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        };
+        return new Date(date).toLocaleDateString('th-TH', options); // ใช้ 'th-TH' สำหรับภาษาไทย
+    };
+
     function showEventDetails(month, year) {
         const eventDetails = document.getElementById("eventDetails");
         const selectedMonthYear = document.getElementById("selectedMonthYear");
-        selectedMonthYear.innerText = `${monthNames[month]} ${year}`;
+
+        // เปลี่ยนข้อความในหัวข้อจาก "Event for" เป็น "กิจกรรมของเดือน"
+        selectedMonthYear.innerText = `กิจกรรมของเดือน ${monthNames[month]} ${year}`;
 
         // ล้างข้อมูลเหตุการณ์ก่อนหน้า
         eventDetails.innerHTML = '';
@@ -385,23 +507,22 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         for (const [date, event] of Object.entries(events)) {
             const eventDate = new Date(date);
             if (eventDate.getMonth() === month && eventDate.getFullYear() === year) {
-                const formattedDate = `${eventDate.getDate()} ${monthNames[eventDate.getMonth()]}`;
+                const formattedDate = formatDate(eventDate); // ใช้ formatDate ในการแปลงวันที่
                 const eventElement = document.createElement("div");
                 eventElement.classList.add("event-item");
                 eventElement.innerHTML = `
-                <div class="event-date">${formattedDate}</div>
-                <div class="event-description">${event.title} - ${event.description}</div>
-            `;
+                    <div class="event-date">${formattedDate}</div>
+                    <div class="event-description">${event.title} - ${formatDate(event.description)}</div> <!-- แปลงวันที่ใน description ด้วย formatDate -->
+                `;
                 eventDetails.appendChild(eventElement);
             }
         }
 
         // ถ้าไม่มีเหตุการณ์ใดๆ ให้แสดงข้อความ
         if (eventDetails.innerHTML === '') {
-            eventDetails.innerHTML = '<p>ไม่มีเหตุการณ์สำหรับเดือนนี้</p>';
+            eventDetails.innerHTML = '<p>ไม่มีกิจกรรมสำหรับเดือนนี้</p>';
         }
     }
-
 
     function renderCalendar() {
         const month = currentDate.getMonth();
@@ -441,7 +562,6 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
             // เพิ่มการทำงานเมื่อคลิกวันที่
             dayElement.addEventListener("click", function() {
                 const dateString = `2024-11-${i.toString().padStart(2, '0')}`;
-                showEventDetails(month, year);
 
                 // ลบคลาส 'selected' จากวันที่ที่เคยเลือกแล้ว
                 const previouslySelected = document.querySelector(".selected");
@@ -489,6 +609,10 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
     renderCalendar();
     </script>
+
+
+
+
 
 </body>
 

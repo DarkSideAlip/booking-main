@@ -77,16 +77,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         margin: 0;
         padding: 0;
         height: 100%;
+        /* ให้ทั้งหน้าเว็บมีความสูงเต็มหน้าจอ */
+        overflow-y: auto;
+        /* อนุญาตการเลื่อนในแนวตั้ง */
     }
 
     body {
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
     }
 
     main {
         flex-grow: 1;
+        /* ให้ส่วนกลางของเนื้อหาขยายได้เต็มพื้นที่ */
     }
 
     .container-custom {
@@ -162,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
