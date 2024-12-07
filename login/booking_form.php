@@ -147,7 +147,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -238,19 +238,55 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
             <div style="font-size: 20px">เพิ่มการจองห้อง</div>
         </div>
         <div class="container-custom">
-            
+        <form action="booking_form.php" method="POST">
+            <!-- เลือกห้องประชุม -->
+            <div class="mb-3">
+                <label for="room_id" class="form-label">ชื่อห้องประชุม</label>
+                <select name="room_id" id="room_id" class="form-control" required>
+                    <option value="">-- เลือกห้องประชุม --</option>
+                    <?php foreach ($rooms as $room): ?>
+                        <option value="<?php echo $room['room_id']; ?>"><?php echo $room['room_name']; ?> (รองรับ <?php echo $room['capacity']; ?> คน)</option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <!-- วันที่จอง -->
+            <div class="mb-3">
+                <label for="booking_date" class="form-label">วันที่จอง</label>
+                <input type="date" id="booking_date" name="booking_date" class="form-control" required>
+            </div>
+
+            <!-- เวลาเริ่มต้น -->
+            <div class="mb-3">
+                <label for="start_time" class="form-label">เวลาเริ่มต้น</label>
+                <input type="time" id="start_time" name="start_time" class="form-control" required>
+            </div>
+
+            <!-- เวลาสิ้นสุด -->
+            <div class="mb-3">
+                <label for="end_time" class="form-label">เวลาสิ้นสุด</label>
+                <input type="time" id="end_time" name="end_time" class="form-control" required>
+            </div>
+
+            <!-- คำอธิบาย -->
+            <div class="mb-3">
+                <label for="description" class="form-label">คำอธิบาย</label>
+                <textarea id="description" name="description" class="form-control" rows="3" placeholder="ระบุรายละเอียดการจองห้องประชุม" required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">บันทึกการจอง</button>
+        </form>
+
+
         </div>
 
 
-    </div>
+        <!-- Footer -->
+        <div class="footer">
+            Copyright 2025 © - BangWa Developer
+        </div>
 
-
-    <!-- Footer -->
-    <div class="footer">
-        Copyright 2025 © - BangWa Developer
-    </div>
-
-    <script src="js/bootstrap.bundle.min.js"></script>
+        <script src="js/bootstrap.bundle.min.js"></script>
 
 
 

@@ -246,6 +246,10 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         /* จัดให้อยู่กลาง */
     }
 
+    full-height {
+        margin-top: 50px;
+    }
+
 
     .event-container {
         height: 450px;

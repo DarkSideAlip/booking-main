@@ -63,34 +63,6 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         padding-bottom: 20px;
     }
 
-    /* Navbar brand logo */
-    .navbar-brand .responsive-img {
-        max-width: 100%;
-        height: auto;
-    }
-
-    /* Adjusting padding for Navbar */
-    .navbar {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-    }
-
-    /* Adjust padding for nav-link */
-    .nav-link {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-    }
-
-    /* Dropdown menu styling */
-    .nav-item .dropdown-menu {
-        background-color: #343a40;
-        color: #ffffff;
-    }
-
-    .dropdown-menu .dropdown-item {
-        color: #ffffff;
-    }
-
     .container-custom {
         background-color: #fff;
         padding: 20px;
@@ -128,11 +100,6 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
     }
 
-    .dropdown-menu .dropdown-item:hover {
-        background-color: #495057;
-        color: #ffffff;
-    }
-
     .footer {
         width: 100%;
         background-color: #f8f9fa;
@@ -142,12 +109,72 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         margin-top: auto;
         position: relative;
     }
+
+    table {
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    th,
+    td {
+        border: 1px solid #e0e0e0;
+        padding: 20px;
+    }
+
+    th {
+        background-color: #f8f9fa;
+    }
+
+    td {
+        background-color: #ffffff;
+    }
+
+    td img {
+        border-radius: 5px;
+        /* กำหนดความโค้งให้กับรูปภาพ */
+    }
+
+    /* Navbar brand logo */
+    .navbar-brand .responsive-img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Adjusting padding for Navbar */
+    .navbar {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    /* Adjust padding for nav-link */
+    .nav-link {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    /* Dropdown menu styling */
+    .nav-item .dropdown-menu {
+        background-color: #343a40;
+        color: #ffffff;
+    }
+
+    .dropdown-menu .dropdown-item {
+        color: #ffffff;
+    }
+
+    .dropdown-menu .dropdown-item:hover {
+        background-color: #495057;
+        color: #ffffff;
+    }
     </style>
 </head>
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -238,7 +265,22 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
             <div style="font-size: 20px">รายงาน</div>
         </div>
         <div class="container-custom">
-            
+            <table id="member-table" class="table table-striped" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>หัวข้อ</th>
+                        <th>ชื่อห้อง</th>
+                        <th>ชื่อผู้จอง</th>
+                        <th>สร้างเมื่อ</th>
+                        <th>สถานะ</th>
+                        <th>เหตุผล</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
         </div>
 
 
@@ -250,6 +292,16 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     </div>
 
     <script src="js/bootstrap.bundle.min.js"></script>
+    <!-- JavaScript -->
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="https://cdn.datatables.net/2.1.7/js/dataTables.js"></script>
+    <script src="https://cdn.datatables.net/2.1.7/js/dataTables.bootstrap5.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('#member-table').dataTable();
+    });
+    </script>
 
 
 
