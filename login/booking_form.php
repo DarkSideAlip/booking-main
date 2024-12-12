@@ -252,19 +252,31 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
             <!-- วันที่จอง -->
             <div class="mb-3">
-                <label for="booking_date" class="form-label">วันที่จอง</label>
-                <input type="date" id="booking_date" name="booking_date" class="form-control" required>
+                <label for="date_start" class="form-label">วันที่จองเริ่มต้น</label>
+                <input type="date" id="date_start" name="date_start" class="form-control" readonly>
             </div>
 
             <!-- เวลาเริ่มต้น -->
             <div class="mb-3">
                 <label for="start_time" class="form-label">เวลาเริ่มต้น</label>
-                <input type="time" id="start_time" name="start_time" class="form-control" required>
+                <input type="time" id="start_time" name="start_time" class="form-control" readonly>
+            </div>
+
+            <!-- วันที่จอง -->
+            <div class="mb-3">
+                <label for="date_end" class="form-label">วันที่จองสิ้นสุด</label>
+                <input type="date" id="date_end" name="date_end" class="form-control" required>
             </div>
 
             <!-- เวลาสิ้นสุด -->
             <div class="mb-3">
                 <label for="end_time" class="form-label">เวลาสิ้นสุด</label>
+                <input type="time" id="end_time" name="end_time" class="form-control" required>
+            </div>
+
+            <!-- เวลาสิ้นสุด -->
+            <div class="mb-3">
+                <label for="end_time" class="form-label">ผู้อนุมัติ</label>
                 <input type="time" id="end_time" name="end_time" class="form-control" required>
             </div>
 
@@ -276,9 +288,9 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
             <button type="submit" class="btn btn-primary">บันทึกการจอง</button>
         </form>
-
-
         </div>
+
+    </div>
 
 
         <!-- Footer -->
@@ -288,6 +300,26 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
         <script src="js/bootstrap.bundle.min.js"></script>
 
+        <script>
+        // ดึงวันที่ปัจจุบัน
+        let today = new Date();
+        let now = new Date();
+        
+        // แปลงเป็นรูปแบบ YYYY-MM-DD
+        let yyyy = today.getFullYear();
+        let mm = String(today.getMonth() + 1).padStart(2, '0'); // เดือนต้องเพิ่ม 1 เพราะเดือนเริ่มจาก 0
+        let dd = String(today.getDate()).padStart(2, '0'); // วันต้องเติม 0 ข้างหน้า
+        let hours = String(now.getHours()).padStart(2, '0'); // ชั่วโมง
+        let minutes = String(now.getMinutes()).padStart(2, '0'); // นาที
+        
+        let currentDate = `${yyyy}-${mm}-${dd}`;
+        let currentTime = `${hours}:${minutes}`;
+        
+        // กำหนดค่าให้กับ input
+        document.getElementById("date_start").value = currentDate;
+        document.getElementById("start_time").value = currentTime;
+        </script>
+    
 
 
 </body>

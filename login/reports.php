@@ -291,7 +291,6 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         Copyright 2025 © - BangWa Developer
     </div>
 
-    <script src="js/bootstrap.bundle.min.js"></script>
     <!-- JavaScript -->
     <script src="js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
