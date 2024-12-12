@@ -13,6 +13,7 @@ if (!in_array($current_page, $exempt_pages)) {
         header('Location: index.php');
         exit;
     }
+    
 
     // ตรวจสอบว่าไอดีผู้ใช้ยังอยู่ในฐานข้อมูลหรือไม่
     $personnel_id = $_SESSION['personnel_id'];
