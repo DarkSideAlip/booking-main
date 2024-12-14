@@ -12,7 +12,51 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 include 'db_connect.php';
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
 
-// ดึงข้อมูลห้องประชุมจากฐานข้อมูลและแสดงผล
+// ดึงข้อมูลห้องประชุมจากฐานข้อมูล
+$sql = "SELECT hall_id, hall_name, hall_detail, hall_size, capacity FROM hall"; 
+$result = $conn->query($sql);
+
+// ดึงข้อมูลชื่อผู้อนุมัติจากบัญชีที่ล็อกอินในปัจจุบัน
+$approver_name = ""; // ตัวแปรเก็บชื่อผู้อนุมัติ
+if (isset($_SESSION['personnel_id'])) {
+    $personnel_id = $_SESSION['personnel_id']; // ดึง Personnel_ID จาก session
+    $approver_query = "SELECT First_Name FROM personnel WHERE Personnel_ID = ?";
+    $stmt = $conn->prepare($approver_query);
+    $stmt->bind_param('i', $personnel_id);
+    $stmt->execute();
+    $stmt->bind_result($approver_name);
+    $stmt->fetch();
+    $stmt->close();
+}
+
+
+// ตรวจสอบว่า form ถูก submit หรือไม่
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $room_id = $_POST['hall_id'];
+    $attendees = $_POST['attendees'];  // จำนวนผู้เข้าประชุม
+
+    // ดึงข้อมูล capilary จากห้องที่เลือก
+    $sql_check = "SELECT capilary FROM hall WHERE hall_id = ?";
+    $stmt = $conn->prepare($sql_check);
+    $stmt->bind_param('i', $room_id);
+    $stmt->execute();
+    $stmt->bind_result($capilary);
+    $stmt->fetch();
+    
+    // เช็คว่า จำนวนผู้เข้าประชุมไม่เกินขีดจำกัด
+    if ($attendees > $capilary) {
+        $error_message = "ไม่สามารถจองห้องนี้ได้ เนื่องจากจำนวนผู้เข้าประชุมเกินขีดจำกัด (รองรับได้ $capilary คน)";
+    } else {
+        // ทำการบันทึกข้อมูลการจองห้องประชุมที่นี่ (โค้ดการบันทึกการจองห้องประชุม)
+        // ตัวอย่าง:
+        // $sql_insert_booking = "INSERT INTO bookings (room_id, attendees, ...) VALUES (?, ?, ...)";
+        // $stmt_insert = $conn->prepare($sql_insert_booking);
+        // $stmt_insert->bind_param('ii...', $room_id, $attendees, ...);
+        // $stmt_insert->execute();
+    }
+}
+
+
 ?>
 
 <!DOCTYPE html>
@@ -238,88 +282,114 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
             <div style="font-size: 20px">เพิ่มการจองห้อง</div>
         </div>
         <div class="container-custom">
-        <form action="booking_form.php" method="POST">
-            <!-- เลือกห้องประชุม -->
-            <div class="mb-3">
-                <label for="room_id" class="form-label">ชื่อห้องประชุม</label>
-                <select name="room_id" id="room_id" class="form-control" required>
-                    <option value="">-- เลือกห้องประชุม --</option>
-                    <?php foreach ($rooms as $room): ?>
-                        <option value="<?php echo $room['room_id']; ?>"><?php echo $room['room_name']; ?> (รองรับ <?php echo $room['capacity']; ?> คน)</option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+            <form action="booking_form.php" method="POST">
+                <!-- เลือกห้องประชุม -->
+                <div class="mb-3">
+                    <label for="hall_id" class="form-label">ชื่อห้องประชุม</label>
+                    <select name="hall_id" id="hall_id" class="form-control" required>
+                        <option value="">-- เลือกห้องประชุม --</option>
+                        <?php 
+                        if ($result->num_rows > 0) {
+                            // วนลูปแสดงข้อมูลห้องประชุม
+                            while ($row = $result->fetch_assoc()) {
+                                echo "<option value='" . $row['hall_id'] . "'>";
+                                echo $row['hall_name'] . " (" . $row['hall_size'] . ") - รองรับ " . $row['capacity'] . " คน";
+                                echo "</option>";
+                            }
+                        } else {
+                            echo "<option value=''>ไม่มีห้องประชุม</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
 
-            <!-- วันที่จอง -->
-            <div class="mb-3">
-                <label for="date_start" class="form-label">วันที่จองเริ่มต้น</label>
-                <input type="date" id="date_start" name="date_start" class="form-control" readonly>
-            </div>
+                <!-- จำนวนผู้เข้าประชุม -->
+                <div class="mb-3">
+                    <label for="attendees" class="form-label">จำนวนผู้เข้าประชุม</label>
+                    <input type="number" id="attendees" name="attendees" class="form-control" required min="1">
+                </div>
 
-            <!-- เวลาเริ่มต้น -->
-            <div class="mb-3">
-                <label for="start_time" class="form-label">เวลาเริ่มต้น</label>
-                <input type="time" id="start_time" name="start_time" class="form-control" readonly>
-            </div>
+                <?php if (isset($error_message)): ?>
+                <div class="alert alert-danger" role="alert">
+                    <?php echo $error_message; ?>
+                </div>
+                <?php endif; ?>
 
-            <!-- วันที่จอง -->
-            <div class="mb-3">
-                <label for="date_end" class="form-label">วันที่จองสิ้นสุด</label>
-                <input type="date" id="date_end" name="date_end" class="form-control" required>
-            </div>
+                <!-- วันที่จอง -->
+                <div class="mb-3">
+                    <label for="date_start" class="form-label">วันที่จองเริ่มต้น</label>
+                    <input type="date" id="date_start" name="date_start" class="form-control" readonly>
+                </div>
 
-            <!-- เวลาสิ้นสุด -->
-            <div class="mb-3">
-                <label for="end_time" class="form-label">เวลาสิ้นสุด</label>
-                <input type="time" id="end_time" name="end_time" class="form-control" required>
-            </div>
+                <!-- เวลาเริ่มต้น -->
+                <div class="mb-3">
+                    <label for="start_time" class="form-label">เวลาเริ่มต้น</label>
+                    <input type="time" id="start_time" name="start_time" class="form-control" readonly>
+                </div>
 
-            <!-- เวลาสิ้นสุด -->
-            <div class="mb-3">
-                <label for="end_time" class="form-label">ผู้อนุมัติ</label>
-                <input type="time" id="end_time" name="end_time" class="form-control" required>
-            </div>
+                <!-- วันที่จอง -->
+                <div class="mb-3">
+                    <label for="date_end" class="form-label">วันที่จองสิ้นสุด</label>
+                    <input type="date" id="date_end" name="date_end" class="form-control" required>
+                </div>
 
-            <!-- คำอธิบาย -->
-            <div class="mb-3">
-                <label for="description" class="form-label">คำอธิบาย</label>
-                <textarea id="description" name="description" class="form-control" rows="3" placeholder="ระบุรายละเอียดการจองห้องประชุม" required></textarea>
-            </div>
+                <!-- เวลาสิ้นสุด -->
+                <div class="mb-3">
+                    <label for="end_time" class="form-label">เวลาสิ้นสุด</label>
+                    <input type="time" id="end_time" name="end_time" class="form-control" required>
+                </div>
 
-            <button type="submit" class="btn btn-primary">บันทึกการจอง</button>
-        </form>
+                <!-- ฟิลด์ผู้อนุมัติ -->
+                <div class="mb-3">
+                    <label for="approver" class="form-label">ผู้อนุมัติ</label>
+                    <input type="text" id="approver" class="form-control" name="approver"
+                        value="<?php echo $approver_name; ?>" readonly>
+                </div>
+
+                
+
+
+                <!-- คำอธิบาย -->
+                <div class="mb-3">
+                    <label for="description" class="form-label">คำอธิบาย</label>
+                    <textarea id="description" name="description" class="form-control" rows="3"
+                        placeholder="ระบุรายละเอียดการจองห้องประชุม" required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">บันทึกการจอง</button>
+            </form>
         </div>
 
     </div>
 
 
-        <!-- Footer -->
-        <div class="footer">
-            Copyright 2025 © - BangWa Developer
-        </div>
+    <!-- Footer -->
+    <div class="footer">
+        Copyright 2025 © - BangWa Developer
+    </div>
 
-        <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
 
-        <script>
-        // ดึงวันที่ปัจจุบัน
-        let today = new Date();
-        let now = new Date();
-        
-        // แปลงเป็นรูปแบบ YYYY-MM-DD
-        let yyyy = today.getFullYear();
-        let mm = String(today.getMonth() + 1).padStart(2, '0'); // เดือนต้องเพิ่ม 1 เพราะเดือนเริ่มจาก 0
-        let dd = String(today.getDate()).padStart(2, '0'); // วันต้องเติม 0 ข้างหน้า
-        let hours = String(now.getHours()).padStart(2, '0'); // ชั่วโมง
-        let minutes = String(now.getMinutes()).padStart(2, '0'); // นาที
-        
-        let currentDate = `${yyyy}-${mm}-${dd}`;
-        let currentTime = `${hours}:${minutes}`;
-        
-        // กำหนดค่าให้กับ input
-        document.getElementById("date_start").value = currentDate;
-        document.getElementById("start_time").value = currentTime;
-        </script>
-    
+    <script>
+    // ดึงวันที่ปัจจุบัน
+    let today = new Date();
+    let now = new Date();
+
+    // แปลงเป็นรูปแบบ YYYY-MM-DD
+    let yyyy = today.getFullYear();
+    let mm = String(today.getMonth() + 1).padStart(2, '0'); // เดือนต้องเพิ่ม 1 เพราะเดือนเริ่มจาก 0
+    let dd = String(today.getDate()).padStart(2, '0'); // วันต้องเติม 0 ข้างหน้า
+    let hours = String(now.getHours()).padStart(2, '0'); // ชั่วโมง
+    let minutes = String(now.getMinutes()).padStart(2, '0'); // นาที
+
+    let currentDate = `${yyyy}-${mm}-${dd}`;
+    let currentTime = `${hours}:${minutes}`;
+
+    // กำหนดค่าให้กับ input
+    document.getElementById("date_start").value = currentDate;
+    document.getElementById("start_time").value = currentTime;
+    </script>
+
 
 
 </body>
