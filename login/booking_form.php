@@ -30,31 +30,50 @@ if (isset($_SESSION['personnel_id'])) {
 }
 
 
-// ตรวจสอบว่า form ถูก submit หรือไม่
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // รับค่าจากฟอร์ม
     $room_id = $_POST['hall_id'];
-    $attendees = $_POST['attendees'];  // จำนวนผู้เข้าประชุม
+    $attendees = $_POST['attendees'];
+    $date_start = $_POST['date_start'];
+    $date_end = $_POST['date_end'];
+    $start_time = $_POST['start_time'];
+    $end_time = $_POST['end_time'];
+    $booking_detail = $_POST['description']; // คำอธิบาย
+    $status_id = 1; // ตัวอย่างค่า status_id ที่จะบันทึก (1 = รอดำเนินการ)
+    $approver_id = $_SESSION['personnel_id']; // ใช้ ID ผู้อนุมัติจาก Session
 
-    // ดึงข้อมูล capilary จากห้องที่เลือก
-    $sql_check = "SELECT capilary FROM hall WHERE hall_id = ?";
-    $stmt = $conn->prepare($sql_check);
+    // ตรวจสอบความจุห้องประชุม
+    $sql_check_capacity = "SELECT capacity FROM hall WHERE hall_id = ?";
+    $stmt = $conn->prepare($sql_check_capacity);
     $stmt->bind_param('i', $room_id);
     $stmt->execute();
-    $stmt->bind_result($capilary);
+    $stmt->bind_result($capacity);
     $stmt->fetch();
-    
-    // เช็คว่า จำนวนผู้เข้าประชุมไม่เกินขีดจำกัด
-    if ($attendees > $capilary) {
-        $error_message = "ไม่สามารถจองห้องนี้ได้ เนื่องจากจำนวนผู้เข้าประชุมเกินขีดจำกัด (รองรับได้ $capilary คน)";
+    $stmt->close();
+
+    if ($attendees > $capacity) {
+        $error_message = "ไม่สามารถจองห้องนี้ได้ เนื่องจากจำนวนผู้เข้าประชุมเกินขีดจำกัด (รองรับได้ $capacity คน)";
     } else {
-        // ทำการบันทึกข้อมูลการจองห้องประชุมที่นี่ (โค้ดการบันทึกการจองห้องประชุม)
-        // ตัวอย่าง:
-        // $sql_insert_booking = "INSERT INTO bookings (room_id, attendees, ...) VALUES (?, ?, ...)";
-        // $stmt_insert = $conn->prepare($sql_insert_booking);
-        // $stmt_insert->bind_param('ii...', $room_id, $attendees, ...);
-        // $stmt_insert->execute();
+        // ถ้าจำนวนผู้เข้าประชุมไม่เกินขีดจำกัด
+        // เพิ่มข้อมูลการจอง
+        $sql_insert_booking = "INSERT INTO booking (date_start, date_end, time_start, time_end, personnel_id, hall_id, equipment_id, attendee_count, booking_detail, status_id, approver_id) 
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        $stmt_insert = $conn->prepare($sql_insert_booking);
+        // เชื่อมโยงค่ากับ placeholder ในคำสั่ง SQL
+        $stmt_insert->bind_param('sssssiiisis', 
+            $date_start, $date_end, $start_time, $end_time, $personnel_id, 
+            $room_id, $equipment_id, $attendees, $booking_detail, $status_id, $approver_id);
+
+        if ($stmt_insert->execute()) {
+            $success_message = "การจองห้องประชุมสำเร็จ!";
+        } else {
+            $error_message = "เกิดข้อผิดพลาดในการบันทึกการจองห้องประชุม";
+        }
+        $stmt_insert->close();
     }
 }
+
 
 
 ?>
@@ -289,17 +308,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <select name="hall_id" id="hall_id" class="form-control" required>
                         <option value="">-- เลือกห้องประชุม --</option>
                         <?php 
-                        if ($result->num_rows > 0) {
-                            // วนลูปแสดงข้อมูลห้องประชุม
-                            while ($row = $result->fetch_assoc()) {
-                                echo "<option value='" . $row['hall_id'] . "'>";
-                                echo $row['hall_name'] . " (" . $row['hall_size'] . ") - รองรับ " . $row['capacity'] . " คน";
-                                echo "</option>";
-                            }
-                        } else {
-                            echo "<option value=''>ไม่มีห้องประชุม</option>";
-                        }
-                        ?>
+            if ($result->num_rows > 0) {
+                while ($row = $result->fetch_assoc()) {
+                    echo "<option value='" . $row['hall_id'] . "'>";
+                    echo $row['hall_name'] . " (" . $row['hall_size'] . ") - รองรับ " . $row['capacity'] . " คน";
+                    echo "</option>";
+                }
+            } else {
+                echo "<option value=''>ไม่มีห้องประชุม</option>";
+            }
+            ?>
                     </select>
                 </div>
 
@@ -309,15 +327,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="number" id="attendees" name="attendees" class="form-control" required min="1">
                 </div>
 
-                <?php if (isset($error_message)): ?>
-                <div class="alert alert-danger" role="alert">
-                    <?php echo $error_message; ?>
-                </div>
-                <?php endif; ?>
-
-                <!-- วันที่จอง -->
+                <!-- วันที่เริ่มต้น -->
                 <div class="mb-3">
-                    <label for="date_start" class="form-label">วันที่จองเริ่มต้น</label>
+                    <label for="date_start" class="form-label">วันที่เริ่มต้น</label>
                     <input type="date" id="date_start" name="date_start" class="form-control" readonly>
                 </div>
 
@@ -327,9 +339,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="time" id="start_time" name="start_time" class="form-control" readonly>
                 </div>
 
-                <!-- วันที่จอง -->
+                <!-- วันที่สิ้นสุด -->
                 <div class="mb-3">
-                    <label for="date_end" class="form-label">วันที่จองสิ้นสุด</label>
+                    <label for="date_end" class="form-label">วันที่สิ้นสุด</label>
                     <input type="date" id="date_end" name="date_end" class="form-control" required>
                 </div>
 
@@ -339,25 +351,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="time" id="end_time" name="end_time" class="form-control" required>
                 </div>
 
-                <!-- ฟิลด์ผู้อนุมัติ -->
-                <div class="mb-3">
-                    <label for="approver" class="form-label">ผู้อนุมัติ</label>
-                    <input type="text" id="approver" class="form-control" name="approver"
-                        value="<?php echo $approver_name; ?>" readonly>
-                </div>
-
-                
-
-
-                <!-- คำอธิบาย -->
+                <!-- คำอธิบายการจอง -->
                 <div class="mb-3">
                     <label for="description" class="form-label">คำอธิบาย</label>
-                    <textarea id="description" name="description" class="form-control" rows="3"
-                        placeholder="ระบุรายละเอียดการจองห้องประชุม" required></textarea>
+                    <textarea id="description" name="description" class="form-control" rows="3" required></textarea>
                 </div>
 
                 <button type="submit" class="btn btn-primary">บันทึกการจอง</button>
             </form>
+
         </div>
 
     </div>
