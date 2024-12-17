@@ -14,7 +14,7 @@ if (!in_array($current_page, $exempt_pages)) {
         exit;
     }
 
-    
+
     //ezy
     
 
