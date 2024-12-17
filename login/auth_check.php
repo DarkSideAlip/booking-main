@@ -13,6 +13,9 @@ if (!in_array($current_page, $exempt_pages)) {
         header('Location: index.php');
         exit;
     }
+
+    
+    //ezy
     
 
     // ตรวจสอบว่าไอดีผู้ใช้ยังอยู่ในฐานข้อมูลหรือไม่
