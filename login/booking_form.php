@@ -16,6 +16,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 $sql = "SELECT hall_id, hall_name, hall_detail, hall_size, capacity FROM hall"; 
 $result = $conn->query($sql);
 
+
 // ดึงข้อมูลชื่อผู้อนุมัติจากบัญชีที่ล็อกอินในปัจจุบัน
 $approver_name = ""; // ตัวแปรเก็บชื่อผู้อนุมัติ
 if (isset($_SESSION['personnel_id'])) {
@@ -32,15 +33,21 @@ if (isset($_SESSION['personnel_id'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // รับค่าจากฟอร์ม
-    $room_id = $_POST['hall_id'];
-    $attendees = $_POST['attendees'];
-    $date_start = $_POST['date_start'];
-    $date_end = $_POST['date_end'];
-    $start_time = $_POST['start_time'];
-    $end_time = $_POST['end_time'];
-    $booking_detail = $_POST['description']; // คำอธิบาย
-    $status_id = 1; // ตัวอย่างค่า status_id ที่จะบันทึก (1 = รอดำเนินการ)
-    $approver_id = $_SESSION['personnel_id']; // ใช้ ID ผู้อนุมัติจาก Session
+    $room_id = $_POST['hall_id'] ?? null;
+    $attendees = $_POST['attendees'] ?? null;
+    $date_start = $_POST['date_start'] ?? null;
+    $date_end = $_POST['date_end'] ?? null;
+    $start_time = $_POST['start_time'] ?? null;
+    $end_time = $_POST['end_time'] ?? null;
+    $booking_detail = $_POST['description'] ?? '';
+    $status_id = 1; // รอดำเนินการ
+    $approver_id = $_SESSION['personnel_id'] ?? null;
+
+    // ตรวจสอบข้อมูลที่จำเป็น
+    if (!$room_id || !$attendees || !$date_start || !$date_end || !$start_time || !$end_time || !$approver_id) {
+        echo "<p style='color: red;'>กรุณากรอกข้อมูลให้ครบถ้วน</p>";
+        exit;
+    }
 
     // ตรวจสอบความจุห้องประชุม
     $sql_check_capacity = "SELECT capacity FROM hall WHERE hall_id = ?";
@@ -52,28 +59,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->close();
 
     if ($attendees > $capacity) {
-        $error_message = "ไม่สามารถจองห้องนี้ได้ เนื่องจากจำนวนผู้เข้าประชุมเกินขีดจำกัด (รองรับได้ $capacity คน)";
-    } else {
-        // ถ้าจำนวนผู้เข้าประชุมไม่เกินขีดจำกัด
-        // เพิ่มข้อมูลการจอง
-        $sql_insert_booking = "INSERT INTO booking (date_start, date_end, time_start, time_end, personnel_id, hall_id, equipment_id, attendee_count, booking_detail, status_id, approver_id) 
-                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        $stmt_insert = $conn->prepare($sql_insert_booking);
-        // เชื่อมโยงค่ากับ placeholder ในคำสั่ง SQL
-        $stmt_insert->bind_param('sssssiiisis', 
-            $date_start, $date_end, $start_time, $end_time, $personnel_id, 
-            $room_id, $equipment_id, $attendees, $booking_detail, $status_id, $approver_id);
-
-        if ($stmt_insert->execute()) {
-            $success_message = "การจองห้องประชุมสำเร็จ!";
-        } else {
-            $error_message = "เกิดข้อผิดพลาดในการบันทึกการจองห้องประชุม";
-        }
-        $stmt_insert->close();
+        echo "<p style='color: red;'>จำนวนผู้เข้าประชุมเกินขีดจำกัด (รองรับได้ $capacity คน)</p>";
+        exit;
     }
-}
 
+    // เพิ่มข้อมูลการจอง (Booking)
+    $sql_insert_booking = "INSERT INTO booking 
+        (Day_Start, Day_End, Time_Start, Time_End, Personnel_ID, Hall_ID, Attendee_Count, Booking_Detail, Status_ID, Approver_ID) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $stmt_insert = $conn->prepare($sql_insert_booking);
+    $stmt_insert->bind_param('sssssiisis', 
+        $date_start, $date_end, $start_time, $end_time, $approver_id, 
+        $room_id, $attendees, $booking_detail, $status_id, $approver_id);
+
+    if ($stmt_insert->execute()) {
+        echo "<p style='color: green;'>การจองห้องประชุมสำเร็จ!</p>";
+    } else {
+        echo "<p style='color: red;'>ข้อผิดพลาดในการบันทึก: " . $stmt_insert->error . "</p>";
+    }
+
+    $stmt_insert->close();
+}
 
 
 ?>
@@ -308,22 +314,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <select name="hall_id" id="hall_id" class="form-control" required>
                         <option value="">-- เลือกห้องประชุม --</option>
                         <?php 
-            if ($result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    echo "<option value='" . $row['hall_id'] . "'>";
-                    echo $row['hall_name'] . " (" . $row['hall_size'] . ") - รองรับ " . $row['capacity'] . " คน";
-                    echo "</option>";
-                }
-            } else {
-                echo "<option value=''>ไม่มีห้องประชุม</option>";
-            }
-            ?>
+                            if ($result->num_rows > 0) {
+                                while ($row = $result->fetch_assoc()) {
+                                    echo "<option value='" . $row['hall_id'] . "'>";
+                                    echo $row['hall_name'] . " (" . $row['hall_size'] . ") - รองรับ " . $row['capacity'] . " คน";
+                                    echo "</option>";
+                                }
+                            } else {
+                                echo "<option value=''>ไม่มีห้องประชุม</option>";
+                            }
+                        ?>
                     </select>
                 </div>
 
                 <!-- จำนวนผู้เข้าประชุม -->
                 <div class="mb-3">
-                    <label for="attendees" class="form-label">จำนวนผู้เข้าประชุม</label>
+                    <label for="attendees" class="form-lajbel">จำนวนผู้เข้าประชุม</label>
                     <input type="number" id="attendees" name="attendees" class="form-control" required min="1">
                 </div>
 
