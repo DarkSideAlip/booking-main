@@ -12,6 +12,43 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 include 'db_connect.php';
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
 
+// ตรวจสอบว่ามีการส่ง hall_id ผ่าน URL หรือไม่
+if (!isset($_GET['hall_id'])) {
+    echo "<script>alert('ไม่พบข้อมูลห้องประชุม'); window.location.href='booking.php';</script>";
+    exit;
+}
+
+$hall_id = $_GET['hall_id'];
+echo "Hall ID: " . $hall_id; // Debug: พิมพ์ค่า hall_id
+
+
+$hall_id = $_GET['hall_id'];
+
+// ดึงข้อมูลห้องประชุม
+$sql = "SELECT hall_name, capacity FROM HALL WHERE hall_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $hall_id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows > 0) {
+    $hall = $result->fetch_assoc();
+    $hall_name = $hall['hall_name'];
+    $capacity = $hall['capacity'];
+} else {
+    echo "<script>alert('ไม่พบห้องประชุมที่เลือก'); window.location.href='booking.php';</script>";
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    echo "Personnel ID: " . $_SESSION['personnel_id'] . "<br>";
+    echo "Hall ID: " . $_POST['hall_id'] . "<br>";
+    echo "Date Start: " . $_POST['date_start'] . "<br>";
+    echo "Time Start: " . $_POST['time_start'] . "<br>";
+    echo "Time End: " . $_POST['time_end'] . "<br>";
+    echo "Attendees: " . $_POST['attendees'] . "<br>";
+    echo "Booking Detail: " . $_POST['booking_detail'] . "<br>";
+}
 
 
 
@@ -242,30 +279,19 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         <div class="container-custom">
             <form action="booking_form.php" method="POST">
 
-                <!-- เลือกห้องประชุม -->
                 <div class="mb-3">
-                    <label for="hall_id" class="form-label">ชื่อห้องประชุม</label>
-                    <select name="hall_id" id="hall_id" class="form-control" required>
-                        <option value="">-- เลือกห้องประชุม --</option>
-                        <?php 
-                            if ($result->num_rows > 0) {
-                                while ($row = $result->fetch_assoc()) {
-                                    echo "<option value='" . $row['hall_id'] . "'>";
-                                    echo $row['hall_name'] . " (" . $row['hall_size'] . ") - รองรับ " . $row['capacity'] . " คน";
-                                    echo "</option>";
-                                }
-                            } else {
-                                echo "<option value=''>ไม่มีห้องประชุม</option>";
-                            }
-                        ?>
-                    </select>
+                    <label for="hall_name" class="form-label">ชื่อห้องประชุม</label>
+                    <input type="text" id="hall_name" name="hall_name" class="form-control"
+                        value="<?php echo htmlspecialchars($hall_name); ?>" readonly>
                 </div>
 
-                <!-- จำนวนผู้เข้าประชุม -->
                 <div class="mb-3">
-                    <label for="attendees" class="form-lajbel">จำนวนผู้เข้าประชุม</label>
-                    <input type="number" id="attendees" name="attendees" class="form-control" required min="1">
+                    <label for="attendees" class="form-label">จำนวนผู้เข้าประชุม</label>
+                    <input type="number" id="attendees" name="attendees" class="form-control" required min="1"
+                        max="<?php echo htmlspecialchars($capacity); ?>">
+                    <small class="text-muted">ความจุสูงสุด: <?php echo htmlspecialchars($capacity); ?> คน</small>
                 </div>
+
 
                 <!-- วันที่เริ่มต้น -->
                 <div class="mb-3">
@@ -318,7 +344,6 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
     let currentDate = `${yyyy}-${mm}-${dd}`;
     document.getElementById("date_start").value = currentDate;
-
     </script>
 
 
