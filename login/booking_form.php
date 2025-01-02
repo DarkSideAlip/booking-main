@@ -12,15 +12,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 include 'db_connect.php';
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
 
-// ตรวจสอบว่ามีการส่ง hall_id ผ่าน URL หรือไม่
-if (!isset($_GET['hall_id'])) {
-    echo "<script>alert('ไม่พบข้อมูลห้องประชุม'); window.location.href='booking.php';</script>";
-    exit;
-}
-
-$hall_id = $_GET['hall_id'];
-echo "Hall ID: " . $hall_id; // Debug: พิมพ์ค่า hall_id
-
 
 $hall_id = $_GET['hall_id'];
 
@@ -41,13 +32,44 @@ if ($result->num_rows > 0) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    echo "Personnel ID: " . $_SESSION['personnel_id'] . "<br>";
-    echo "Hall ID: " . $_POST['hall_id'] . "<br>";
-    echo "Date Start: " . $_POST['date_start'] . "<br>";
-    echo "Time Start: " . $_POST['time_start'] . "<br>";
-    echo "Time End: " . $_POST['time_end'] . "<br>";
-    echo "Attendees: " . $_POST['attendees'] . "<br>";
-    echo "Booking Detail: " . $_POST['booking_detail'] . "<br>";
+    $hall_id = $_POST['hall_id'];
+    $attendees = $_POST['attendees'];
+    $date_start = $_POST['date_start'];
+    $time_start = $_POST['time_start'];
+    $time_end = $_POST['time_end'];
+    $booking_detail = $_POST['booking_detail'];
+
+    // กำหนดค่าเริ่มต้น
+    $status_id = 1; // สถานะ "รอตรวจสอบ"
+    $approver_id = $_SESSION['personnel_id']; // ผู้จองคือผู้ใช้ที่ล็อกอิน
+
+    // ตรวจสอบการจองซ้อน
+    $sql = "SELECT * FROM booking 
+            WHERE Hall_ID = ? 
+              AND Date_Start = ? 
+              AND ((Time_Start < ? AND Time_End > ?) OR (Time_Start < ? AND Time_End > ?) OR (Time_Start >= ? AND Time_End <= ?))";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("isssssss", $hall_id, $date_start, $time_end, $time_end, $time_start, $time_start, $time_start, $time_end);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        echo "<script>alert('ไม่สามารถจองห้องประชุมในช่วงเวลาที่เลือกได้ เนื่องจากมีการจองอยู่แล้ว'); window.history.back();</script>";
+        exit;
+    }
+
+    // บันทึกข้อมูลการจอง
+    $sql = "INSERT INTO booking (Personnel_ID, Date_Start, Time_Start, Time_End, Hall_ID, Attendee_Count, Booking_Detail, Status_ID, Approver_ID) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("isssiisii", $_SESSION['personnel_id'], $date_start, $time_start, $time_end, $hall_id, $attendees, $booking_detail, $status_id, $approver_id);
+    $stmt->execute();
+
+    if ($stmt->affected_rows > 0) {
+        echo "<script>alert('บันทึกการจองสำเร็จ!'); window.location.href='main.php';</script>";
+    } else {
+        echo "<script>alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล'); window.history.back();</script>";
+    }
 }
 
 
