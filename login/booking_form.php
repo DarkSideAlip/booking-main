@@ -12,68 +12,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 include 'db_connect.php';
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
 
-// ดึงข้อมูลห้องประชุมจากฐานข้อมูล
-$sql = "SELECT hall_id, hall_name, hall_detail, hall_size, capacity FROM hall"; 
-$result = $conn->query($sql);
 
-
-// ดึงข้อมูลชื่อผู้อนุมัติจากบัญชีที่ล็อกอินในปัจจุบัน
-$approver_name = ""; // ตัวแปรเก็บชื่อผู้อนุมัติ
-if (isset($_SESSION['personnel_id'])) {
-    $personnel_id = $_SESSION['personnel_id']; // ดึง Personnel_ID จาก session
-    $approver_query = "SELECT First_Name FROM personnel WHERE Personnel_ID = ?";
-    $stmt = $conn->prepare($approver_query);
-    $stmt->bind_param('i', $personnel_id);
-    $stmt->execute();
-    $stmt->bind_result($approver_name);
-    $stmt->fetch();
-    $stmt->close();
-}
-
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // รับค่าจากฟอร์ม
-    $room_id = $_POST['hall_id'] ?? null;
-    $attendees = $_POST['attendees'] ?? null;
-    $date_start = $_POST['date_start'] ?? null;
-    $date_end = $_POST['date_end'] ?? null;
-    $start_time = $_POST['start_time'] ?? null;
-    $end_time = $_POST['end_time'] ?? null;
-    $booking_detail = $_POST['description'] ?? '';
-    $status_id = 1; // รอดำเนินการ
-    $approver_id = $_SESSION['personnel_id'] ?? null;
-
-    // ตรวจสอบข้อมูลที่จำเป็น
-    if (!$room_id || !$attendees || !$date_start || !$date_end || !$start_time || !$end_time || !$approver_id) {
-        echo "<p style='color: red;'>กรุณากรอกข้อมูลให้ครบถ้วน</p>";
-        exit;
-    }
-
-    // ตรวจสอบความจุห้องประชุม
-    $sql_check_capacity = "SELECT capacity FROM hall WHERE hall_id = ?";
-    $stmt = $conn->prepare($sql_check_capacity);
-    $stmt->bind_param('i', $room_id);
-    $stmt->execute();
-    $stmt->bind_result($capacity);
-    $stmt->fetch();
-    $stmt->close();
-
-    if ($attendees > $capacity) {
-        echo "<p style='color: red;'>จำนวนผู้เข้าประชุมเกินขีดจำกัด (รองรับได้ $capacity คน)</p>";
-        exit;
-    }
-
-    // เพิ่มข้อมูลการจอง (Booking)
-    $sql_insert_booking = "INSERT INTO booking 
-        (Day_Start, Day_End, Time_Start, Time_End, Personnel_ID, Hall_ID, Attendee_Count, Booking_Detail, Status_ID, Approver_ID) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    $stmt_insert = $conn->prepare($sql_insert_booking);
-    $stmt_insert->bind_param('sssssiisis', 
-        $date_start, $date_end, $start_time, $end_time, $approver_id, 
-        $room_id, $attendees, $booking_detail, $status_id, $approver_id);
-
-    $stmt_insert->close();
-}
 
 
 ?>
@@ -302,10 +241,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="container-custom">
             <form action="booking_form.php" method="POST">
-                <!-- แสดงข้อผิดพลาดถ้ามี -->
-                <?php if (isset($error_message)): ?>
-                <div class="alert alert-danger"><?php echo $error_message; ?></div>
-                <?php endif; ?>
 
                 <!-- เลือกห้องประชุม -->
                 <div class="mb-3">
@@ -334,20 +269,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- วันที่เริ่มต้น -->
                 <div class="mb-3">
-                    <label for="date_start" class="form-label">วันที่เริ่มต้น</label>
+                    <label for="date_start" class="form-label">วันที่จอง</label>
                     <input type="date" id="date_start" name="date_start" class="form-control" readonly>
                 </div>
 
                 <!-- เวลาเริ่มต้น -->
                 <div class="mb-3">
                     <label for="start_time" class="form-label">เวลาเริ่มต้น</label>
-                    <input type="time" id="start_time" name="start_time" class="form-control" readonly>
-                </div>
-
-                <!-- วันที่สิ้นสุด -->
-                <div class="mb-3">
-                    <label for="date_end" class="form-label">วันที่สิ้นสุด</label>
-                    <input type="date" id="date_end" name="date_end" class="form-control" required>
+                    <input type="time" id="start_time" name="start_time" class="form-control" required>
                 </div>
 
                 <!-- เวลาสิ้นสุด -->
@@ -386,15 +315,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     let yyyy = today.getFullYear();
     let mm = String(today.getMonth() + 1).padStart(2, '0'); // เดือนต้องเพิ่ม 1 เพราะเดือนเริ่มจาก 0
     let dd = String(today.getDate()).padStart(2, '0'); // วันต้องเติม 0 ข้างหน้า
-    let hours = String(now.getHours()).padStart(2, '0'); // ชั่วโมง
-    let minutes = String(now.getMinutes()).padStart(2, '0'); // นาที
 
     let currentDate = `${yyyy}-${mm}-${dd}`;
-    let currentTime = `${hours}:${minutes}`;
-
-    // กำหนดค่าให้กับ input
     document.getElementById("date_start").value = currentDate;
-    document.getElementById("start_time").value = currentTime;
+
     </script>
 
 
