@@ -72,12 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $date_start, $date_end, $start_time, $end_time, $approver_id, 
         $room_id, $attendees, $booking_detail, $status_id, $approver_id);
 
-    if ($stmt_insert->execute()) {
-        echo "<p style='color: green;'>การจองห้องประชุมสำเร็จ!</p>";
-    } else {
-        echo "<p style='color: red;'>ข้อผิดพลาดในการบันทึก: " . $stmt_insert->error . "</p>";
-    }
-
     $stmt_insert->close();
 }
 
@@ -308,6 +302,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="container-custom">
             <form action="booking_form.php" method="POST">
+                <!-- แสดงข้อผิดพลาดถ้ามี -->
+                <?php if (isset($error_message)): ?>
+                <div class="alert alert-danger"><?php echo $error_message; ?></div>
+                <?php endif; ?>
+
                 <!-- เลือกห้องประชุม -->
                 <div class="mb-3">
                     <label for="hall_id" class="form-label">ชื่อห้องประชุม</label>
