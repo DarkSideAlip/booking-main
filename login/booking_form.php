@@ -12,53 +12,74 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 include 'db_connect.php';
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
 
+// ดึงข้อมูลห้องประชุมทั้งหมดจากฐานข้อมูล
+$sql = "SELECT Hall_ID, Hall_Name, Capacity FROM HALL";
+$result = $conn->query($sql);
 
-$hall_id = $_GET['hall_id'];
+if (!$result) {
+    die("Error in fetching halls: " . $conn->error);
+}
 
-// ดึงข้อมูลห้องประชุม
-$sql = "SELECT hall_name, capacity FROM HALL WHERE hall_id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $hall_id);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows > 0) {
-    $hall = $result->fetch_assoc();
-    $hall_name = $hall['hall_name'];
-    $capacity = $hall['capacity'];
-} else {
-    echo "<script>alert('ไม่พบห้องประชุมที่เลือก'); window.location.href='booking.php';</script>";
-    exit;
+// เก็บข้อมูลห้องประชุมในอาร์เรย์
+$halls = [];
+while ($row = $result->fetch_assoc()) {
+    $halls[] = $row;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $hall_id = $_POST['hall_id'];
-    $attendees = $_POST['attendees'];
+    $hall_id = intval($_POST['hall_id']);
+    $attendees = intval($_POST['attendees']);
     $date_start = $_POST['date_start'];
     $time_start = $_POST['time_start'];
     $time_end = $_POST['time_end'];
     $booking_detail = $_POST['booking_detail'];
-
-    // กำหนดค่าเริ่มต้น
     $status_id = 1; // สถานะ "รอตรวจสอบ"
-    $approver_id = $_SESSION['personnel_id']; // ผู้จองคือผู้ใช้ที่ล็อกอิน
+    $approver_id = $_SESSION['personnel_id'];
 
-    // ตรวจสอบการจองซ้อน
+    // ตรวจสอบความจุของห้องประชุม
+    $sql = "SELECT Capacity FROM HALL WHERE Hall_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $hall_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        $hall = $result->fetch_assoc();
+        $capacity = $hall['Capacity'];
+
+        if ($attendees > $capacity) {
+            echo "<script>alert('จำนวนผู้เข้าประชุมเกินความจุสูงสุดของห้องประชุม (ความจุ: $capacity คน)'); window.history.back();</script>";
+            exit;
+        }
+    } else {
+        echo "<script>alert('ไม่พบข้อมูลห้องประชุมที่เลือก'); window.history.back();</script>";
+        exit;
+    }
+
+    // ตรวจสอบเวลาการจอง (เหมือนเดิม)
+    if (strtotime($time_start) >= strtotime($time_end)) {
+        echo "<script>alert('เวลาเริ่มต้นต้องน้อยกว่าเวลาสิ้นสุด'); window.history.back();</script>";
+        exit;
+    }
+
+    // ตรวจสอบการจองซ้อน (เหมือนเดิม)
     $sql = "SELECT * FROM booking 
             WHERE Hall_ID = ? 
               AND Date_Start = ? 
-              AND ((Time_Start < ? AND Time_End > ?) OR (Time_Start < ? AND Time_End > ?) OR (Time_Start >= ? AND Time_End <= ?))";
+              AND ((Time_Start < ? AND Time_End > ?) 
+                   OR (Time_Start < ? AND Time_End > ?) 
+                   OR (Time_Start >= ? AND Time_End <= ?))";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("isssssss", $hall_id, $date_start, $time_end, $time_end, $time_start, $time_start, $time_start, $time_end);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
-        echo "<script>alert('ไม่สามารถจองห้องประชุมในช่วงเวลาที่เลือกได้ เนื่องจากมีการจองอยู่แล้ว'); window.history.back();</script>";
+        echo "<script>alert('ไม่สามารถจองห้องประชุมในช่วงเวลาที่เลือกได้'); window.history.back();</script>";
         exit;
     }
 
-    // บันทึกข้อมูลการจอง
+    // บันทึกข้อมูลการจอง (เหมือนเดิม)
     $sql = "INSERT INTO booking (Personnel_ID, Date_Start, Time_Start, Time_End, Hall_ID, Attendee_Count, Booking_Detail, Status_ID, Approver_ID) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
@@ -71,7 +92,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "<script>alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล'); window.history.back();</script>";
     }
 }
-
 
 
 ?>
@@ -300,43 +320,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="container-custom">
             <form action="booking_form.php" method="POST">
-
                 <div class="mb-3">
-                    <label for="hall_name" class="form-label">ชื่อห้องประชุม</label>
-                    <input type="text" id="hall_name" name="hall_name" class="form-control"
-                        value="<?php echo htmlspecialchars($hall_name); ?>" readonly>
+                    <label for="hall_id" class="form-label">เลือกห้องประชุม</label>
+                    <select id="hall_id" name="hall_id" class="form-select" required onchange="updateCapacity()">
+                        <option value="" data-capacity="0">-- กรุณาเลือกห้องประชุม --</option>
+                        <?php foreach ($halls as $hall): ?>
+                        <option value="<?php echo $hall['Hall_ID']; ?>"
+                            data-capacity="<?php echo $hall['Capacity']; ?>">
+                            <?php echo htmlspecialchars($hall['Hall_Name']) . " (ความจุ: " . $hall['Capacity'] . " คน)"; ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
+                <!-- หัวข้อการจอง -->
+                <div class="mb-3">
+                    <label for="topic" class="form-label">หัวข้อการจอง</label>
+                    <input type="text" id="topic" name="topic" class="form-control" placeholder="หัวข้อการประชุม"
+                        required>
+                </div>
+
+                <!-- จำนวนผู้เข้าประชุม -->
                 <div class="mb-3">
                     <label for="attendees" class="form-label">จำนวนผู้เข้าประชุม</label>
-                    <input type="number" id="attendees" name="attendees" class="form-control" required min="1"
-                        max="<?php echo htmlspecialchars($capacity); ?>">
-                    <small class="text-muted">ความจุสูงสุด: <?php echo htmlspecialchars($capacity); ?> คน</small>
+                    <input type="number" id="attendees" name="attendees" class="form-control" required min="1">
+                    <small id="capacity-info" class="text-muted">ความจุสูงสุด: - คน</small>
                 </div>
-
 
                 <!-- วันที่เริ่มต้น -->
                 <div class="mb-3">
                     <label for="date_start" class="form-label">วันที่จอง</label>
-                    <input type="date" id="date_start" name="date_start" class="form-control" readonly>
+                    <input type="date" id="date_start" name="date_start" class="form-control" required>
                 </div>
 
                 <!-- เวลาเริ่มต้น -->
                 <div class="mb-3">
-                    <label for="start_time" class="form-label">เวลาเริ่มต้น</label>
-                    <input type="time" id="start_time" name="start_time" class="form-control" required>
+                    <label for="time_start" class="form-label">เวลาเริ่มต้น</label>
+                    <input type="time" id="time_start" name="time_start" class="form-control" required>
                 </div>
 
                 <!-- เวลาสิ้นสุด -->
                 <div class="mb-3">
-                    <label for="end_time" class="form-label">เวลาสิ้นสุด</label>
-                    <input type="time" id="end_time" name="end_time" class="form-control" required>
+                    <label for="time_end" class="form-label">เวลาสิ้นสุด</label>
+                    <input type="time" id="time_end" name="time_end" class="form-control" required>
                 </div>
 
                 <!-- คำอธิบายการจอง -->
                 <div class="mb-3">
-                    <label for="description" class="form-label">คำอธิบาย</label>
-                    <textarea id="description" name="description" class="form-control" rows="3" required></textarea>
+                    <label for="booking_detail" class="form-label">คำอธิบาย</label>
+                    <textarea id="booking_detail" name="booking_detail" class="form-control" rows="3"
+                        required></textarea>
                 </div>
 
                 <button type="submit" class="btn btn-primary">บันทึกการจอง</button>
@@ -366,6 +399,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     let currentDate = `${yyyy}-${mm}-${dd}`;
     document.getElementById("date_start").value = currentDate;
+
+    function updateCapacity() {
+        const hallSelect = document.getElementById("hall_id");
+        const attendeesInput = document.getElementById("attendees");
+        const capacityInfo = document.getElementById("capacity-info");
+
+        // ดึงความจุจาก data-capacity
+        const selectedOption = hallSelect.options[hallSelect.selectedIndex];
+        const capacity = selectedOption.getAttribute("data-capacity");
+
+        // อัปเดตข้อมูลความจุในฟอร์ม
+        attendeesInput.max = capacity || 0; // กำหนดค่า max
+        capacityInfo.textContent = `ความจุสูงสุด: ${capacity || "-"} คน`;
+    }
     </script>
 
 

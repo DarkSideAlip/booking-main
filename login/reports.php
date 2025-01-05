@@ -12,7 +12,33 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 include 'db_connect.php';
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
 
-// ดึงข้อมูลห้องประชุมจากฐานข้อมูลและแสดงผล
+$sql = "SELECT 
+            b.Booking_ID,
+            CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name,
+            b.Date_Start,
+            b.Time_Start,
+            b.Time_End,
+            h.Hall_Name,
+            b.Attendee_Count,
+            b.Topic,
+            b.Booking_Detail,
+            s.Status_Name,
+            CONCAT(a.First_Name, ' ', a.Last_Name) AS Approver_Name
+        FROM 
+            booking b
+        LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+        LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
+        LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
+        LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
+        ORDER BY b.Booking_ID DESC";
+
+$result = $conn->query($sql);
+
+if (!$result) {
+    die("Error retrieving data: " . $conn->error);
+}
+
+
 ?>
 
 <!DOCTYPE html>
@@ -23,6 +49,8 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>รายงาน</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
     <style>
     @media (max-width: 991px) {
         #navbarNav {
@@ -54,6 +82,15 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+    }
+
+    /* จัดข้อความให้อยู่กึ่งกลางทั้งแนวตั้งและแนวนอน */
+    .table td,
+    .table th {
+        text-align: center;
+        /* จัดกึ่งกลางแนวนอน */
+        vertical-align: middle;
+        /* จัดกึ่งกลางแนวตั้ง */
     }
 
     main {
@@ -98,6 +135,34 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         max-width: 1200px;
         width: 100%;
 
+    }
+
+    .text-warning {
+        color: #ffc107;
+        /* สีเหลือง */
+
+    }
+
+    .text-success {
+        color: #28a745;
+        /* สีเขียว */
+
+    }
+
+    .text-danger {
+        color: #dc3545;
+        /* สีแดง */
+
+    }
+
+
+    /* สีพื้นหลังสำหรับสถานะ "รอตรวจสอบ" */
+    .status-pending {
+        background-color: #ffeeba;
+        /* สีเหลืองอ่อน */
+        color: #856404;
+        /* สีข้อความเหลืองเข้ม */
+        font-weight: bold;
     }
 
     .footer {
@@ -272,16 +337,155 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
                         <th>หัวข้อ</th>
                         <th>ชื่อห้อง</th>
                         <th>ชื่อผู้จอง</th>
-                        <th>สร้างเมื่อ</th>
+                        <th>วันที่และเวลา</th>
+                        <th>จำนวนผู้เข้าร่วม</th>
                         <th>สถานะ</th>
+                        <th>ผู้อนุมัติ</th>
                         <th>เหตุผล</th>
                     </tr>
                 </thead>
                 <tbody>
+                    <?php
+                // SQL สำหรับดึงข้อมูลจากฐานข้อมูล
+                $sql = "SELECT 
+                            b.Booking_ID,
+                            b.Topic,
+                            h.Hall_Name,
+                            CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name,
+                            b.Date_Start,
+                            b.Time_Start,
+                            b.Time_End,
+                            b.Attendee_Count,
+                            s.Status_Name,
+                            CONCAT(a.First_Name, ' ', a.Last_Name) AS Approver_Name,
+                            b.Booking_Detail
+                        FROM 
+                            booking b
+                        LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+                        LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
+                        LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
+                        LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
+                        ORDER BY b.Booking_ID DESC";
 
+                $result = $conn->query($sql);
+
+                if ($result && $result->num_rows > 0):
+                    while ($row = $result->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo $row['Booking_ID']; ?></td>
+                        <td><?php echo htmlspecialchars($row['Topic']); ?></td>
+                        <td><?php echo htmlspecialchars($row['Hall_Name']); ?></td>
+                        <td><?php echo htmlspecialchars($row['Booker_Name']); ?></td>
+                        <td>
+                            <?php echo htmlspecialchars($row['Date_Start']) . ' ' . 
+                                    htmlspecialchars($row['Time_Start']) . ' - ' . 
+                                    htmlspecialchars($row['Time_End']); ?>
+                        </td>
+                        <td><?php echo htmlspecialchars($row['Attendee_Count']); ?></td>
+                        <td>
+                            <?php if ($row['Status_Name'] == 'รอตรวจสอบ'): ?>
+                            <span class="text-warning">รอตรวจสอบ</span>
+                            <?php elseif ($row['Status_Name'] == 'อนุมัติ'): ?>
+                            <span class="text-success">อนุมัติ</span>
+                            <?php elseif ($row['Status_Name'] == 'ไม่อนุมัติ'): ?>
+                            <span class="text-danger">ไม่อนุมัติ</span>
+                            <?php else: ?>
+                            <span class="text-muted">ไม่ทราบสถานะ</span>
+                            <?php endif; ?>
+                        </td>
+
+
+                        <td><?php echo htmlspecialchars($row['Approver_Name']); ?></td>
+                        <td>
+                            <!-- ปุ่มสำหรับเปิด Modal รายละเอียด -->
+                            <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal"
+                                data-bs-target="#detailModal<?php echo $row['Booking_ID']; ?>">
+                                รายละเอียด
+                            </button>
+
+                            <!-- Modal รายละเอียด -->
+                            <div class="modal fade" id="detailModal<?php echo $row['Booking_ID']; ?>" tabindex="-1"
+                                aria-labelledby="detailModalLabel<?php echo $row['Booking_ID']; ?>" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title"
+                                                id="detailModalLabel<?php echo $row['Booking_ID']; ?>">รายละเอียด</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <?php echo htmlspecialchars($row['Booking_Detail']); ?>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary"
+                                                data-bs-dismiss="modal">ปิด</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <?php if ($row['Status_ID'] == 1): ?>
+                            <!-- ปุ่มสำหรับเปิด Modal ติ๊กถูก -->
+                            <button type="button" class="btn btn-outline-success btn-sm ms-2" data-bs-toggle="modal"
+                                data-bs-target="#approveRejectModal<?php echo $row['Booking_ID']; ?>">
+                                <i class="fas fa-check-circle"></i>
+                            </button>
+
+                            <!-- Modal ติ๊กถูก -->
+                            <div class="modal fade" id="approveRejectModal<?php echo $row['Booking_ID']; ?>"
+                                tabindex="-1" aria-labelledby="approveRejectModalLabel<?php echo $row['Booking_ID']; ?>"
+                                aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title"
+                                                id="approveRejectModalLabel<?php echo $row['Booking_ID']; ?>">
+                                                การจัดการการจอง</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>คุณต้องการดำเนินการอย่างไรกับการจองนี้?</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <!-- ปุ่มอนุมัติ -->
+                                            <form method="POST" action="approve.php" style="display:inline;">
+                                                <input type="hidden" name="booking_id"
+                                                    value="<?php echo $row['Booking_ID']; ?>">
+                                                <button type="submit" class="btn btn-success">อนุมัติ</button>
+                                            </form>
+
+                                            <!-- ปุ่มไม่อนุมัติ -->
+                                            <form method="POST" action="reject.php" style="display:inline;">
+                                                <input type="hidden" name="booking_id"
+                                                    value="<?php echo $row['Booking_ID']; ?>">
+                                                <button type="submit" class="btn btn-danger">ไม่อนุมัติ</button>
+                                            </form>
+
+                                            <!-- ปุ่มปิด -->
+                                            <button type="button" class="btn btn-secondary"
+                                                data-bs-dismiss="modal">ยกเลิก</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </td>
+
+
+                    </tr>
+                    <?php endwhile; ?>
+                    <?php else: ?>
+                    <tr>
+                        <td colspan="9" class="text-center">ไม่มีข้อมูลการจอง</td>
+                    </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
+    </div>
+
 
 
     </div>
@@ -300,6 +504,10 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     $(document).ready(function() {
         $('#member-table').dataTable();
     });
+
+
+    // รีเฟรช DataTables หลังลบข้อมูล
+    $('#member-table').DataTable().ajax.reload(null, false);
     </script>
 
 
