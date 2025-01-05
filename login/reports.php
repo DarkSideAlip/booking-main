@@ -20,9 +20,9 @@ $sql = "SELECT
             b.Time_End,
             h.Hall_Name,
             b.Attendee_Count,
-            b.Topic,
+            b.Topic_Name,
             b.Booking_Detail,
-            s.Status_Name,
+            s.Status_ID,
             CONCAT(a.First_Name, ' ', a.Last_Name) AS Approver_Name
         FROM 
             booking b
@@ -349,14 +349,14 @@ if (!$result) {
                 // SQL สำหรับดึงข้อมูลจากฐานข้อมูล
                 $sql = "SELECT 
                             b.Booking_ID,
-                            b.Topic,
+                            b.Topic_Name,
                             h.Hall_Name,
                             CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name,
                             b.Date_Start,
                             b.Time_Start,
                             b.Time_End,
                             b.Attendee_Count,
-                            s.Status_Name,
+                            s.Status_ID,
                             CONCAT(a.First_Name, ' ', a.Last_Name) AS Approver_Name,
                             b.Booking_Detail
                         FROM 
@@ -373,31 +373,29 @@ if (!$result) {
                     while ($row = $result->fetch_assoc()): ?>
                     <tr>
                         <td><?php echo $row['Booking_ID']; ?></td>
-                        <td><?php echo htmlspecialchars($row['Topic']); ?></td>
+                        <td><?php echo htmlspecialchars($row['Topic_Name']); ?></td>
                         <td><?php echo htmlspecialchars($row['Hall_Name']); ?></td>
                         <td><?php echo htmlspecialchars($row['Booker_Name']); ?></td>
                         <td>
                             <?php echo htmlspecialchars($row['Date_Start']) . ' ' . 
-                                    htmlspecialchars($row['Time_Start']) . ' - ' . 
-                                    htmlspecialchars($row['Time_End']); ?>
+                htmlspecialchars($row['Time_Start']) . ' - ' . 
+                htmlspecialchars($row['Time_End']); ?>
                         </td>
                         <td><?php echo htmlspecialchars($row['Attendee_Count']); ?></td>
                         <td>
-                            <?php if ($row['Status_Name'] == 'รอตรวจสอบ'): ?>
+                            <?php if ((int)$row['Status_ID'] === 1): ?>
                             <span class="text-warning">รอตรวจสอบ</span>
-                            <?php elseif ($row['Status_Name'] == 'อนุมัติ'): ?>
+                            <?php elseif ((int)$row['Status_ID'] === 2): ?>
                             <span class="text-success">อนุมัติ</span>
-                            <?php elseif ($row['Status_Name'] == 'ไม่อนุมัติ'): ?>
+                            <?php elseif ((int)$row['Status_ID'] === 3): ?>
                             <span class="text-danger">ไม่อนุมัติ</span>
                             <?php else: ?>
                             <span class="text-muted">ไม่ทราบสถานะ</span>
                             <?php endif; ?>
                         </td>
-
-
                         <td><?php echo htmlspecialchars($row['Approver_Name']); ?></td>
                         <td>
-                            <!-- ปุ่มสำหรับเปิด Modal รายละเอียด -->
+                            <!-- ปุ่มรายละเอียด -->
                             <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal"
                                 data-bs-target="#detailModal<?php echo $row['Booking_ID']; ?>">
                                 รายละเอียด
@@ -425,8 +423,9 @@ if (!$result) {
                                 </div>
                             </div>
 
-                            <?php if ($row['Status_ID'] == 1): ?>
-                            <!-- ปุ่มสำหรับเปิด Modal ติ๊กถูก -->
+                            <!-- แสดงปุ่มอนุมัติ/ไม่อนุมัติเฉพาะสถานะรอตรวจสอบ -->
+                            <?php if ((int)$row['Status_ID'] === 1): ?>
+                            <!-- ปุ่มอนุมัติ -->
                             <button type="button" class="btn btn-outline-success btn-sm ms-2" data-bs-toggle="modal"
                                 data-bs-target="#approveRejectModal<?php echo $row['Booking_ID']; ?>">
                                 <i class="fas fa-check-circle"></i>
@@ -441,7 +440,8 @@ if (!$result) {
                                         <div class="modal-header">
                                             <h5 class="modal-title"
                                                 id="approveRejectModalLabel<?php echo $row['Booking_ID']; ?>">
-                                                การจัดการการจอง</h5>
+                                                การจัดการการจอง
+                                            </h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                 aria-label="Close"></button>
                                         </div>
@@ -472,9 +472,8 @@ if (!$result) {
                             </div>
                             <?php endif; ?>
                         </td>
-
-
                     </tr>
+
                     <?php endwhile; ?>
                     <?php else: ?>
                     <tr>

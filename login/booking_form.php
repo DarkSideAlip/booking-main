@@ -32,9 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $date_start = $_POST['date_start'];
     $time_start = $_POST['time_start'];
     $time_end = $_POST['time_end'];
+    $topic_name = $_POST['topic_name'];
     $booking_detail = $_POST['booking_detail'];
     $status_id = 1; // สถานะ "รอตรวจสอบ"
     $approver_id = $_SESSION['personnel_id'];
+    
 
     // ตรวจสอบความจุของห้องประชุม
     $sql = "SELECT Capacity FROM HALL WHERE Hall_ID = ?";
@@ -56,13 +58,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ตรวจสอบเวลาการจอง (เหมือนเดิม)
+    // ตรวจสอบเวลาการจอง
     if (strtotime($time_start) >= strtotime($time_end)) {
         echo "<script>alert('เวลาเริ่มต้นต้องน้อยกว่าเวลาสิ้นสุด'); window.history.back();</script>";
         exit;
     }
 
-    // ตรวจสอบการจองซ้อน (เหมือนเดิม)
+    // ตรวจสอบการจองซ้อน
     $sql = "SELECT * FROM booking 
             WHERE Hall_ID = ? 
               AND Date_Start = ? 
@@ -79,11 +81,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // บันทึกข้อมูลการจอง (เหมือนเดิม)
-    $sql = "INSERT INTO booking (Personnel_ID, Date_Start, Time_Start, Time_End, Hall_ID, Attendee_Count, Booking_Detail, Status_ID, Approver_ID) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    // บันทึกข้อมูลการจอง
+    $sql = "INSERT INTO booking (Personnel_ID, Date_Start, Time_Start, Time_End, Hall_ID, Attendee_Count, Booking_Detail, Status_ID, Approver_ID, Topic_Name) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isssiisii", $_SESSION['personnel_id'], $date_start, $time_start, $time_end, $hall_id, $attendees, $booking_detail, $status_id, $approver_id);
+    $stmt->bind_param("isssiisiis", $_SESSION['personnel_id'], $date_start, $time_start, $time_end, $hall_id, $attendees, $booking_detail, $status_id, $approver_id, $topic_name);
     $stmt->execute();
 
     if ($stmt->affected_rows > 0) {
@@ -92,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "<script>alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล'); window.history.back();</script>";
     }
 }
+
 
 
 ?>
@@ -335,9 +338,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- หัวข้อการจอง -->
                 <div class="mb-3">
-                    <label for="topic" class="form-label">หัวข้อการจอง</label>
-                    <input type="text" id="topic" name="topic" class="form-control" placeholder="หัวข้อการประชุม"
-                        required>
+                    <label for="topic_name" class="form-label">หัวข้อการจอง</label>
+                    <input type="text" id="topic_name" name="topic_name" class="form-control" required>
                 </div>
 
                 <!-- จำนวนผู้เข้าประชุม -->

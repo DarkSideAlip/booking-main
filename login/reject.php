@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("ii", $status_id, $booking_id);
 
     if ($stmt->execute()) {
-        echo "<script>alert('ไม่อนุมัติการจองสำเร็จ!'); window.location.href='report.php';</script>";
+        echo "<script>alert('ไม่อนุมัติการจองสำเร็จ!'); window.location.href='reports.php';</script>";
     } else {
         echo "<script>alert('เกิดข้อผิดพลาด! กรุณาลองใหม่อีกครั้ง'); window.history.back();</script>";
     }
