@@ -12,7 +12,27 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 include 'db_connect.php';
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
 
-// ดึงข้อมูลห้องประชุมจากฐานข้อมูลและแสดงผล
+// SQL สำหรับดึงเฉพาะสถานะ "รอตรวจสอบ"
+$sql = "SELECT 
+            b.Booking_ID, 
+            b.Topic_Name, 
+            h.Hall_Name, 
+            CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name, 
+            b.Date_Start, 
+            b.Time_Start, 
+            b.Time_End, 
+            b.Attendee_Count, 
+            s.Status_Name 
+        FROM 
+            booking b
+        LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+        LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
+        LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
+        WHERE b.Status_ID = 3
+        ORDER BY b.Booking_ID DESC";
+
+$result = $conn->query($sql);
+
 ?>
 
 <!DOCTYPE html>
@@ -50,10 +70,45 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         flex-direction: column;
     }
 
+    .table td,
+    .table th {
+        text-align: center;
+        /* จัดกึ่งกลางแนวนอน */
+        vertical-align: middle;
+        /* จัดกึ่งกลางแนวตั้ง */
+    }
+
     body {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+    }
+
+    table {
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    th,
+    td {
+        border: 1px solid #e0e0e0;
+        padding: 20px;
+    }
+
+    th {
+        background-color: #f8f9fa;
+    }
+
+    td {
+        background-color: #ffffff;
+    }
+
+    td img {
+        border-radius: 5px;
+        /* กำหนดความโค้งให้กับรูปภาพ */
     }
 
     main {
@@ -147,7 +202,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -238,7 +293,56 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
             <div style="font-size: 20px">รายการที่ไม่อนุมัติ</div>
         </div>
         <div class="container-custom">
-            
+            <div class="container mt-5">
+                <table id="member-table" class="table table-striped" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>หัวข้อ</th>
+                            <th>ชื่อห้อง</th>
+                            <th>ชื่อผู้จอง</th>
+                            <th>วันที่และเวลา</th>
+                            <th>จำนวนผู้เข้าร่วม</th>
+                            <th>สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                $result = $conn->query($sql);
+                if ($result && $result->num_rows > 0):
+                    while ($row = $result->fetch_assoc()): ?>
+                        <tr>
+                            <td><?php echo $row['Booking_ID']; ?></td>
+                            <td><?php echo htmlspecialchars($row['Topic_Name']); ?></td>
+                            <td><?php echo htmlspecialchars($row['Hall_Name']); ?></td>
+                            <td><?php echo htmlspecialchars($row['Booker_Name']); ?></td>
+                            <td>
+                                <?php echo htmlspecialchars($row['Date_Start']) . ' ' . 
+                                        htmlspecialchars($row['Time_Start']) . ' - ' . 
+                                        htmlspecialchars($row['Time_End']); ?>
+                            </td>
+                            <td><?php echo htmlspecialchars($row['Attendee_Count']); ?></td>
+                            <td>
+                                <?php if ($row['Status_Name'] == 'รอตรวจสอบ'): ?>
+                                <span class="text-warning">รอตรวจสอบ</span>
+                                <?php elseif ($row['Status_Name'] == 'อนุมัติ'): ?>
+                                <span class="text-success">อนุมัติ</span>
+                                <?php elseif ($row['Status_Name'] == 'ไม่อนุมัติ'): ?>
+                                <span class="text-danger">ไม่อนุมัติ</span>
+                                <?php else: ?>
+                                <span class="text-muted">ไม่ทราบสถานะ</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                        <?php else: ?>
+                        <tr>
+                            <td colspan="7" class="text-center">ไม่มีข้อมูล</td>
+                        </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
 
@@ -249,7 +353,17 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         Copyright 2025 © - BangWa Developer
     </div>
 
+    <!-- JavaScript -->
     <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="https://cdn.datatables.net/2.1.7/js/dataTables.js"></script>
+    <script src="https://cdn.datatables.net/2.1.7/js/dataTables.bootstrap5.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('#member-table').dataTable();
+    });
+    </script>
+
 
 
 

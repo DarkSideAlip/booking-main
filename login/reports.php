@@ -154,17 +154,7 @@ if (!$result) {
         /* สีแดง */
 
     }
-
-
-    /* สีพื้นหลังสำหรับสถานะ "รอตรวจสอบ" */
-    .status-pending {
-        background-color: #ffeeba;
-        /* สีเหลืองอ่อน */
-        color: #856404;
-        /* สีข้อความเหลืองเข้ม */
-        font-weight: bold;
-    }
-
+    
     .footer {
         width: 100%;
         background-color: #f8f9fa;
