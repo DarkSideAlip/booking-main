@@ -374,7 +374,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         required></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-primary">บันทึกการจอง</button>
+                <button type="submit" class="btn btn-dark">บันทึกการจอง</button>
             </form>
 
         </div>
