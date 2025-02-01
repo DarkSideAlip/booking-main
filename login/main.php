@@ -24,6 +24,15 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
             margin: 0;
             padding: 0;
         }
+
+        .calendar td {
+            height: 80px;
+        }
+
+        .booking-dot {
+            width: 8px;
+            height: 8px;
+        }
     }
 
     html,
@@ -80,7 +89,8 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
         max-width: 1200px;
         width: 100%;
-        margin-bottom: 20px;
+        margin-bottom: 100px;
+        /* กำหนดระยะห่างระหว่างปฏิทินกับ footer */
     }
 
     .text-center {
@@ -156,6 +166,122 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     .navigation {
         display: flex;
         gap: 10px;
+    }
+
+    /* ตั้งค่าขนาดและลักษณะของเซลล์ในปฏิทิน */
+    .calendar {
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .calendar th,
+    .calendar td {
+        width: 14.2%;
+        height: 100px;
+        text-align: center;
+        vertical-align: top;
+        position: relative;
+        border: 1px solid #ddd;
+        padding: 5px;
+    }
+
+    /* จุดสีของกิจกรรม */
+    .booking-dots {
+        display: flex;
+        justify-content: center;
+        margin-top: 5px;
+        gap: 5px;
+    }
+
+    .booking-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+    /* สีของจุดที่ตรงกับ Message Box */
+    .dot-gray {
+        background-color: #999999;
+    }
+
+    /* สีเทา */
+    .dot-red {
+        background-color: #d0021b;
+    }
+
+    /* สีแดง */
+    .dot-yellow {
+        background-color: #f5a623;
+    }
+
+    /* สีเหลือง */
+    .dot-blue {
+        background-color: #007bff;
+    }
+
+    /* สีน้ำเงิน */
+    .dot-green {
+        background-color: #4CAF50;
+    }
+
+    /* สีเขียว */
+
+    /* ไฮไลต์วันที่ปัจจุบัน */
+    .current-day {
+        background-color: black;
+        color: white;
+        font-weight: bold;
+    }
+
+    /* รูปแบบการจัดวางข้อมูลใน Message Box */
+    .booking-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        /* ระยะห่างระหว่างจุดสีและข้อความ */
+        margin-bottom: 10px;
+    }
+
+    /* จุดสีใน Modal */
+    .booking-item .booking-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+        /* ป้องกันไม่ให้จุดสีเปลี่ยนขนาด */
+    }
+
+    /* ข้อความกิจกรรม */
+    .booking-item p {
+        margin: 0;
+        font-size: 16px;
+    }
+
+
+    .dot-red {
+        background-color: #d0021b;
+    }
+
+    .dot-blue {
+        background-color: #007bff;
+    }
+
+    .dot-green {
+        background-color: #4CAF50;
+    }
+
+    .dot-yellow {
+        background-color: #f5a623;
+    }
+
+    .dot-orange {
+        background-color: #FFA500;
+    }
+
+    .dot-purple {
+        background-color: #800080;
     }
     </style>
 </head>
@@ -271,13 +397,33 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         </div>
     </div>
 
+    <!-- Modal สำหรับแสดงรายละเอียดการจอง -->
+    <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bookingModalLabel">รายละเอียดกิจกรรม</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="bookingModalBody">
+                    <!-- รายละเอียดจะถูกเพิ่มที่นี่ -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <div class="full-height">
         <div class="text-center bg-dark">
             <div class="calendar-header">
                 <h2 id="month-year"></h2>
                 <div class="navigation">
-                    <button id="prev-month" class="btn btn-outline-secondary"><</button>
-                    <button id="next-month" class="btn btn-outline-secondary">></button>
+                    <button id="prev-month" class="btn btn-outline-secondary">
+                        << /button>
+                            <button id="next-month" class="btn btn-outline-secondary">></button>
                 </div>
             </div>
         </div>
@@ -317,36 +463,43 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
     ];
 
+    let bookings = [];
     let currentDate = new Date();
+
+    // ดึงข้อมูลจากฐานข้อมูลผ่าน PHP
+    async function fetchBookings() {
+        try {
+            const response = await fetch("get_booking.php"); // เรียกไฟล์ PHP
+            bookings = await response.json();
+            renderCalendar(currentDate);
+        } catch (error) {
+            console.error("Error fetching bookings:", error);
+        }
+    }
+
 
     function renderCalendar(date) {
         const month = date.getMonth();
         const year = date.getFullYear();
 
-        // Set month and year in the header
         document.getElementById('month-year').textContent = `${monthNames[month]} ${year}`;
 
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-
-        // Calculate the number of days in the month
         const totalDays = lastDay.getDate();
-
-        // Calculate the first day of the month (0 = Sunday, 6 = Saturday)
         const startDay = firstDay.getDay();
 
         const calendarBody = document.getElementById('calendar-body');
-        calendarBody.innerHTML = ''; // Clear the calendar body
+        calendarBody.innerHTML = '';
 
         let row = document.createElement('tr');
+        const today = new Date();
 
-        // Add empty cells for days before the start of the month
         for (let i = 0; i < startDay; i++) {
             const cell = document.createElement('td');
             row.appendChild(cell);
         }
 
-        // Add the days of the month
         for (let day = 1; day <= totalDays; day++) {
             if (row.children.length === 7) {
                 calendarBody.appendChild(row);
@@ -354,7 +507,44 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
             }
 
             const cell = document.createElement('td');
-            cell.textContent = day;
+            const fullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+            cell.innerHTML = `<span class="day-number">${day}</span>`;
+
+            // ตรวจสอบว่ามีการจองในวันนี้หรือไม่
+            const bookingForDate = bookings.filter(booking => booking.date === fullDate);
+
+            // คลิกได้ทุกวัน (มีหรือไม่มีการจอง)
+            cell.addEventListener('click', () => showBookingDetails(bookingForDate, fullDate));
+
+            if (bookingForDate.length > 0) {
+                cell.classList.add('has-booking');
+
+                // สร้างจุดสีของกิจกรรมแบบสุ่มจำนวน (1-3 จุดต่อวัน)
+                const dotsContainer = document.createElement('div');
+                dotsContainer.classList.add('booking-dots');
+
+                let numDots = Math.min(bookingForDate.length, Math.floor(Math.random() * 3) + 1); // 1 ถึง 3 จุดสุ่ม
+
+                for (let i = 0; i < numDots; i++) {
+                    const dot = document.createElement('div');
+                    dot.classList.add('booking-dot', bookingForDate[i].color);
+                    dotsContainer.appendChild(dot);
+                }
+
+                cell.appendChild(dotsContainer);
+            }
+
+
+            // ไฮไลต์วันที่ปัจจุบัน
+            if (
+                day === today.getDate() &&
+                month === today.getMonth() &&
+                year === today.getFullYear()
+            ) {
+                cell.classList.add('current-day');
+            }
+
             row.appendChild(cell);
         }
 
@@ -363,6 +553,33 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         }
     }
 
+    /* ฟังก์ชันแสดงรายละเอียดการจอง */
+    function showBookingDetails(bookings, date) {
+        const modalBody = document.getElementById('bookingModalBody');
+        const modalTitle = document.getElementById('bookingModalLabel');
+
+        if (bookings.length > 0) {
+            // แสดงรายการจองปกติ
+            modalTitle.textContent = `รายละเอียดการจอง (${date})`;
+            modalBody.innerHTML = bookings.map(booking => `
+            <div class="booking-item">
+                <span class="booking-dot ${booking.color}"></span>
+                <p>${booking.details}</p>
+            </div>
+        `).join('');
+        } else {
+            // หากไม่มีรายการจอง
+            modalTitle.textContent = `ไม่มีรายการจอง (${date})`;
+            modalBody.innerHTML =
+                `<p style="text-align: center; font-weight: bold; color: red;">ไม่มีการจองในวันนี้</p>`;
+        }
+
+        // เปิด Modal
+        const bookingModal = new bootstrap.Modal(document.getElementById('bookingModal'));
+        bookingModal.show();
+    }
+
+    /* ปุ่มเปลี่ยนเดือน */
     document.getElementById('prev-month').addEventListener('click', () => {
         currentDate.setMonth(currentDate.getMonth() - 1);
         renderCalendar(currentDate);
@@ -373,8 +590,12 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         renderCalendar(currentDate);
     });
 
-    // Initialize the calendar on page load
-    renderCalendar(currentDate);
+    /* ดึงข้อมูลจากฐานข้อมูลและแสดงปฏิทิน */
+    fetchBookings();
+
+
+
+   
     </script>
 
 
