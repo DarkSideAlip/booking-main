@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $phone = $_POST['phone'];
     $email = $_POST['email'];
     $role_id = $_POST['role_id'];
+    $telegram_id = $_POST['telegram_id'];
     $entered_secret_code = $_POST['secret_code'];
 
     // ตรวจสอบรหัสลับก่อน
@@ -23,10 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
         // บันทึกข้อมูลผู้ใช้ใหม่
-        $sql = "INSERT INTO personnel (Username, Password, First_Name, Last_Name, Position_ID, Subject_Group_ID, Phone, Email, Role_ID) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO personnel (Username, Password, First_Name, Last_Name, Position_ID, Subject_Group_ID, Phone, Email, Role_ID, Telegram_ID) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssssiissi", $username, $hashed_password, $first_name, $last_name, $position_id, $subject_group_id, $phone, $email, $role_id);
+        $stmt->bind_param("ssssiissis", $username, $hashed_password, $first_name, $last_name, $position_id, $subject_group_id, $phone, $email, $role_id, $telegram_id);
 
         if ($stmt->execute()) {
             echo "<div class='alert alert-success'>ลงทะเบียนสำเร็จ!</div>";
@@ -77,6 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     <label for="email">อีเมล:</label>
     <input type="email" name="email" required><br>
+
+    <label for="telegram_id">ไอดีเทเลแกรม:</label>
+    <input type="text" name="telegram_id" required><br>
     
     <label for="role_id">บทบาท:</label>
     <select name="role_id" required>

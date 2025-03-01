@@ -1,16 +1,56 @@
 <?php
 session_start();
 
-// ตรวจสอบว่าผู้ใช้ล็อกอินหรือไม่
+// ตรวจสอบสิทธิ์การเข้าถึง
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    // ถ้ายังไม่ได้ล็อกอิน ให้เปลี่ยนเส้นทางไปที่หน้า index.php
     header('Location: index.php');
     exit;
 }
 
-// หากล็อกอินแล้ว จะแสดงข้อมูลห้องประชุมได้
+// เชื่อมต่อฐานข้อมูล
 include 'db_connect.php';
-include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
+include 'auth_check.php'; 
+
+// ฟังก์ชันส่งข้อความไปยัง Telegram
+function sendTelegramMessage($chatId, $message, $botToken) {
+    $url = "https://api.telegram.org/bot$botToken/sendMessage";
+    
+    // สร้างข้อมูลที่ต้องการส่งไปยัง Telegram
+    $data = [
+        'chat_id' => $chatId,
+        'text' => $message,
+    ];
+
+    // ใช้ cURL เพื่อส่งคำขอ
+    $ch = curl_init();
+
+    // ตั้งค่าต่างๆ สำหรับการใช้ cURL
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+
+    // ปิดการตรวจสอบ SSL (เมื่อระบบไม่สามารถตรวจสอบใบรับรองได้)
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  // ปิดการตรวจสอบใบรับรอง SSL
+
+    // ส่งคำขอ
+    $result = curl_exec($ch);
+    
+    // ตรวจสอบผลลัพธ์
+    if ($result === false) {
+        error_log("Error sending message to Telegram: " . curl_error($ch));
+    } else {
+        error_log("Message sent successfully to Telegram: $result");
+    }
+
+    // ปิดการเชื่อมต่อ cURL
+    curl_close($ch);
+
+    return $result !== false;
+}
+
+// BOT Token ของคุณ
+$telegramBotToken = "7668345720:AAGIKyTGFQGUGiMOjbax5Mv9Y30Chydnqc4";
 
 // ดึงข้อมูลห้องประชุมทั้งหมดจากฐานข้อมูล
 $sql = "SELECT Hall_ID, Hall_Name, Capacity FROM HALL";
@@ -39,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
 
     // ตรวจสอบความจุของห้องประชุม
-    $sql = "SELECT Capacity FROM HALL WHERE Hall_ID = ?";
+    $sql = "SELECT Capacity, Hall_Name FROM HALL WHERE Hall_ID = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $hall_id);
     $stmt->execute();
@@ -48,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($result->num_rows > 0) {
         $hall = $result->fetch_assoc();
         $capacity = $hall['Capacity'];
+        $hallName = $hall['Hall_Name'];  // ดึงชื่อห้องประชุม
 
         if ($attendees > $capacity) {
             echo "<script>alert('จำนวนผู้เข้าประชุมเกินความจุสูงสุดของห้องประชุม (ความจุ: $capacity คน)'); window.history.back();</script>";
@@ -89,15 +130,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute();
 
     if ($stmt->affected_rows > 0) {
-        echo "<script>alert('บันทึกการจองสำเร็จ!'); window.location.href='main.php';</script>";
-    } else {
-        echo "<script>alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล'); window.history.back();</script>";
+
+        // ดึง Telegram ID ของผู้ใช้
+        $sql = "SELECT Telegram_ID FROM personnel WHERE Personnel_ID = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $_SESSION['personnel_id']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $telegram_id = $row['Telegram_ID'];
+
+        // ตรวจสอบว่า Telegram ID ถูกต้องและไม่เป็นค่าว่าง
+        if (!empty($telegram_id)) {
+            // สร้างข้อความที่ต้องการส่งไปยัง Telegram
+            $message = "มีการจองห้องประชุมใหม่:\nหัวข้อ: $topic_name\nห้องประชุม: $hallName\nจำนวนผู้เข้าประชุม: $attendees\nเริ่มเวลา: $date_start $time_start\nสิ้นสุดเวลา: $date_start $time_end";
+            // ส่งข้อความไปยัง Telegram
+            sendTelegramMessage($telegram_id, $message, $telegramBotToken);
+        } else {
+            error_log("No Telegram ID found for Personnel_ID: " . $_SESSION['personnel_id']);
+        }
     }
 }
-
-
-
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

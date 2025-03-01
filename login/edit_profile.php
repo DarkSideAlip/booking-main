@@ -12,11 +12,11 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
 // ดึงข้อมูลของผู้ใช้ที่ล็อกอินจากตาราง personnel
 $personnel_id = $_SESSION['personnel_id'];
-$sql = "SELECT First_Name, Last_Name, Email, Phone, ID_Line, Position_ID, Subject_Group_ID, Role_ID FROM personnel WHERE Personnel_ID = ?";
+$sql = "SELECT First_Name, Last_Name, Email, Phone, Telegram_ID, Position_ID, Subject_Group_ID, Role_ID FROM personnel WHERE Personnel_ID = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('i', $personnel_id);
 $stmt->execute();
-$stmt->bind_result($first_name, $last_name, $email, $phone, $id_line, $position_id, $subject_group_id, $role_id);
+$stmt->bind_result($first_name, $last_name, $email, $phone, $telegram_id, $position_id, $subject_group_id, $role_id);
 $stmt->fetch();
 $stmt->close();
 
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $new_last_name = $_POST['last_name'];
     $new_email = $_POST['email'];
     $new_phone = $_POST['phone'];
-    $new_id_line = $_POST['id_line'];
+    $new_telegram_id = $_POST['telegram_id'];
 
     $new_position_id = $position_id;
     $new_subject_group_id = $subject_group_id;
@@ -60,16 +60,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm_password = $_POST['confirm_password'];
 
     // ตรวจสอบว่ามีข้อมูลซ้ำหรือไม่
-    $duplicate_check_sql = "SELECT Personnel_ID FROM personnel WHERE (Email = ? OR ID_Line = ?) AND Personnel_ID != ?";
+    $duplicate_check_sql = "SELECT Personnel_ID FROM personnel WHERE (Email = ? OR Telegram_ID = ?) AND Personnel_ID != ?";
     $stmt = $conn->prepare($duplicate_check_sql);
-    $stmt->bind_param('ssi', $new_email, $new_id_line, $personnel_id);
+    $stmt->bind_param('ssi', $new_email, $new_telegram_id, $personnel_id);
     $stmt->execute();
     $stmt->store_result();
 
     if ($stmt->num_rows > 0) {
         // ข้อมูลซ้ำ
         echo "<script>
-                alert('อีเมลหรือ Line ID นี้มีผู้ใช้งานแล้ว!');
+                alert('อีเมลหรือ Telegram ID นี้มีผู้ใช้งานแล้ว!');
                 window.location.href='edit_profile.php';
               </script>";
         exit;
@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $new_last_name == $last_name &&
             $new_email == $email &&
             $new_phone == $phone &&
-            $new_id_line == $id_line &&
+            $new_telegram_id == $telegram_id &&
             empty($new_password) // ถ้าไม่มีการเปลี่ยนรหัสผ่าน
         ) {
             // ถ้าไม่มีการเปลี่ยนแปลงข้อมูล
@@ -104,17 +104,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // ถ้ามีการเปลี่ยนแปลงข้อมูล ทำการอัปเดต
-        $sql = "UPDATE personnel SET First_Name = ?, Last_Name = ?, Email = ?, Phone = ?, ID_Line = ?, Position_ID = ?, Subject_Group_ID = ?, Role_ID = ?";
+        $sql = "UPDATE personnel SET First_Name = ?, Last_Name = ?, Email = ?, Phone = ?, Telegram_ID = ?, Position_ID = ?, Subject_Group_ID = ?, Role_ID = ?";
 
         if (!empty($new_password)) {
             // เข้ารหัสรหัสผ่านใหม่ด้วย password_hash() ก่อนบันทึกลงฐานข้อมูล
             $sql .= ", Password = ?";
             $stmt = $conn->prepare($sql);
             $hashed_password = password_hash($new_password, PASSWORD_DEFAULT); // เข้ารหัสรหัสผ่านใหม่
-            $stmt->bind_param('sssssssss', $new_first_name, $new_last_name, $new_email, $new_phone, $new_id_line, $new_position_id, $new_subject_group_id, $new_role_id, $hashed_password);
+            $stmt->bind_param('sssssssss', $new_first_name, $new_last_name, $new_email, $new_phone, $new_telegram_id, $new_position_id, $new_subject_group_id, $new_role_id, $hashed_password);
         } else {
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param('ssssssss', $new_first_name, $new_last_name, $new_email, $new_phone, $new_id_line, $new_position_id, $new_subject_group_id, $new_role_id);
+            $stmt->bind_param('ssssssss', $new_first_name, $new_last_name, $new_email, $new_phone, $new_telegram_id, $new_position_id, $new_subject_group_id, $new_role_id);
         }
 
         if ($stmt->execute()) {
@@ -122,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['first_name'] = $new_first_name;
             $_SESSION['last_name'] = $new_last_name;
             $_SESSION['phone'] = $new_phone;
-            $_SESSION['id_line'] = $new_id_line;
+            $_SESSION['telegram_id'] = $new_telegram_id;
 
             // รีเฟรชหน้าเพื่อดึงข้อมูลใหม่
             echo "<script>
@@ -425,8 +425,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label for="id_line" class="form-label">Line ID</label>
-                    <input type="text" id="id_line" class="form-control" name="id_line" value="<?php echo $id_line; ?>"
+                    <label for="telegram_id" class="form-label">Telegram ID</label>
+                    <input type="text" id="telegram_id" class="form-control" name="telegram_id" value="<?php echo $telegram_id; ?>"
                         required>
                 </div>
                 <div class="mb-3">
