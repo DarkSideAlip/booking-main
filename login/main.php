@@ -105,9 +105,50 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
     }
 
+    .full-height2 {
+        margin-top: 50px;
+    }
+
+    .full-height2 {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        position: relative;
+        padding-bottom: 20px;
+        flex-grow: 1;
+        overflow: auto;
+        padding-bottom: 20px;
+    }
+
     .container-custom-2 {
         background-color: #fff;
         padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        max-width: 1200px;
+        width: 100%;
+        margin-bottom: 100px;
+        /* กำหนดระยะห่างระหว่างปฏิทินกับ footer */
+        flex-wrap: wrap; /* ช่วยให้รายการที่เกินขนาดไปยังบรรทัดถัดไป */
+    }
+
+    .text-center2 {
+        color: white;
+        padding: 20px;
+        border-radius: 5px 5px 0 0;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        max-width: 1200px;
+        width: 100%;
+
+    }
+
+    .container-custom-2 {
+        background-color: #fff;
+        padding: 20px;
+        display: flex;
         border-radius: 5px;
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
         max-width: 1200px;
@@ -283,6 +324,51 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     .dot-purple {
         background-color: #800080;
     }
+
+    .upcoming {
+        width: 350px;
+        height: 160px;
+        background-color:rgb(1, 66, 136);
+        border-radius: 10px;
+        margin-right: 15px;
+    }
+
+    .activing {
+        width: 350px;
+        height: 160px;
+        background-color:rgb(0, 79, 3);
+        border-radius: 10px;
+        margin-right: 15px; 
+    }
+
+    .disactiving {
+        width: 350px;
+        height: 160px;
+        background-color:rgb(124, 106, 0);
+        border-radius: 10px;
+        margin-right: 15px;
+    }
+
+    .allroom {
+        width: 350px;
+        height: 160px;
+        margin-top: 15px;
+        background-color:rgb(106, 1, 1);
+        border-radius: 10px;
+        margin-right: 15px;
+    }
+
+    .allbooking {
+        width: 350px;
+        height: 160px;
+        background-color:rgb(72, 1, 81);
+        margin-top: 15px;
+        border-radius: 10px;
+        margin-right: 15px;
+
+    }
+
+
     </style>
 </head>
 
@@ -415,14 +501,85 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         </div>
     </div>
 
+    <div class="full-height2">
+        <div class="text-center2 bg-dark">
+            <div style="font-size: 20px">Dashboard</div>
+        </div>
+        <div class="container-custom-2">
+            <div class="upcoming">
+                <div style="padding: 20px; font-size: 30px;">
+                    <i class="fa-solid fa-user-check" style="color: #ffffff;"></i>
+                </div>
+                    <div style="display: block;">
+                        <div style="display: flex;">รายการจองห้องของฉัน</div>
+                        <div></div>
+                    </div>
+                <hr>
+                <div style="color: #ffffff; font-size: 16px; margin-left: 16px;">จองห้อง รอตรวจสอบ</div>
+            </div>
+            <div class="activing">
+                <div>
+                    <div style="padding: 20px; font-size: 30px;">
+                        <i class="fa-solid fa-check" style="color: #ffffff;"></i>
+                    </div>
+                    <div>   
+                        <div></div>
+                        <div></div>
+                    </div>
+                </div>
+                <hr>
+                <div style="color: #ffffff; font-size: 16px; margin-left: 16px;">จองห้อง อนุมัติ</div>
+            </div>
+            <div class="disactiving">
+                <div>
+                    <div style="padding: 20px; font-size: 30px;">
+                        <i class="fa-solid fa-xmark" style="color: #ffffff;"></i>
+                    </div>
+                    <div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                </div>
+                <hr>
+                <div style="color: #ffffff; font-size: 16px; margin-left: 16px;">จองห้อง ไม่อนุมัติ</div>
+            </div>
+
+            <div class="allbooking">
+                <div>
+                    <div style="padding: 20px; font-size: 30px;">
+                        <i class="fa-solid fa-book" style="color: #ffffff;"></i>
+                    </div>
+                    <div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                </div>
+                <hr>
+                <div style="color: #ffffff; font-size: 16px; margin-left: 16px;">จองห้อง รอตรวจสอบ</div>
+            </div>
+            <div class="allroom">
+                <div>
+                    <div style="padding: 20px; font-size: 30px;">
+                        <i class="fa-solid fa-building" style="color: #ffffff;"></i>
+                    </div>
+                    <div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                </div>
+                <hr>
+                <div style="color: #ffffff; font-size: 16px; margin-left: 16px;">ห้องทั้งหมด</div>
+            </div>
+        </div>
+    </div>
+
 
     <div class="full-height">
         <div class="text-center bg-dark">
             <div class="calendar-header">
                 <h2 id="month-year"></h2>
                 <div class="navigation">
-                    <button id="prev-month" class="btn btn-outline-secondary">
-                        << /button>
+                    <button id="prev-month" class="btn btn-outline-secondary"><</button>
                             <button id="next-month" class="btn btn-outline-secondary">></button>
                 </div>
             </div>

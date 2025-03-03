@@ -12,11 +12,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt_check->execute();
     $result_check = $stmt_check->get_result();
 
-    if ($result_check->num_rows === 0) {
-        echo "<script>alert('ไม่พบข้อมูลการจอง!'); window.history.back();</script>";
-        exit;
-    }
-
     // อัปเดตสถานะการจอง
     $sql = "UPDATE booking SET Status_ID = ? WHERE Booking_ID = ?";
     $stmt = $conn->prepare($sql);
@@ -28,4 +23,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "<script>alert('เกิดข้อผิดพลาด! กรุณาลองใหม่อีกครั้ง'); window.history.back();</script>";
     }
 }
+
 ?>

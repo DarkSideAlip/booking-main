@@ -3,14 +3,93 @@ session_start();
 
 // ตรวจสอบว่าผู้ใช้ล็อกอินหรือไม่
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    // ถ้ายังไม่ได้ล็อกอิน ให้เปลี่ยนเส้นทางไปที่หน้า index.php
     header('Location: index.php');
     exit;
 }
 
-// หากล็อกอินแล้ว จะแสดงข้อมูลห้องประชุมได้
+// เชื่อมต่อฐานข้อมูล
 include 'db_connect.php';
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
+
+// ฟังก์ชันส่งข้อความไปยัง Telegram
+function sendTelegramMessage($chatId, $message, $botToken) {
+    $url = "https://api.telegram.org/bot$botToken/sendMessage";
+    
+    // สร้างข้อมูลที่ต้องการส่งไปยัง Telegram
+    $data = [
+        'chat_id' => $chatId,
+        'text' => $message,
+    ];
+
+    // ใช้ cURL เพื่อส่งคำขอ
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  // ปิดการตรวจสอบใบรับรอง SSL
+    $result = curl_exec($ch);
+    curl_close($ch);
+
+    // ตรวจสอบผลลัพธ์
+    if ($result === false) {
+        error_log("Error sending message to Telegram: " . curl_error($ch));
+    } else {
+        error_log("Message sent successfully to Telegram: $result");
+    }
+    return $result !== false;
+}
+
+// BOT Token ของคุณ
+$telegramBotToken = "7668345720:AAGIKyTGFQGUGiMOjbax5Mv9Y30Chydnqc4";
+
+// ฟังก์ชันการอนุมัติ
+function approveBooking($booking_id, $approver_id, $conn, $telegramBotToken) {
+    // อัปเดตสถานะการจองเป็น "อนุมัติ"
+    $sql = "UPDATE booking SET Status_ID = 2, Approver_ID = ? WHERE Booking_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ii", $approver_id, $booking_id);
+    $stmt->execute();
+    
+    // ดึงข้อมูลผู้ใช้และห้องประชุม
+    $sql = "SELECT p.Telegram_ID, h.Hall_Name, b.Topic_Name FROM booking b
+            LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+            LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
+            WHERE b.Booking_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $booking_id);
+    $stmt->execute();
+    $stmt->bind_result($telegram_id, $hall_name, $topic_name);
+    $stmt->fetch();
+    
+    // ส่งข้อความไปยัง Telegram ว่าอนุมัติแล้ว
+    $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
+    sendTelegramMessage($telegram_id, $message, $telegramBotToken);
+}
+
+// ฟังก์ชันการไม่อนุมัติ
+function rejectBooking($booking_id, $approver_id, $conn, $telegramBotToken) {
+    // อัปเดตสถานะการจองเป็น "ไม่อนุมัติ"
+    $sql = "UPDATE booking SET Status_ID = 3, Approver_ID = ? WHERE Booking_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ii", $approver_id, $booking_id);
+    $stmt->execute();
+
+    // ดึงข้อมูลผู้ใช้และห้องประชุม
+    $sql = "SELECT p.Telegram_ID, h.Hall_Name, b.Topic_Name FROM booking b
+            LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+            LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
+            WHERE b.Booking_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $booking_id);
+    $stmt->execute();
+    $stmt->bind_result($telegram_id, $hall_name, $topic_name);
+    $stmt->fetch();
+
+    // ส่งข้อความไปยัง Telegram ว่าไม่อนุมัติแล้ว
+    $message = "การจองห้องประชุมหมายเลข $booking_id ไม่ได้รับการอนุมัติ\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
+    sendTelegramMessage($telegram_id, $message, $telegramBotToken);
+}
 
 $sql = "SELECT 
             b.Booking_ID,
@@ -38,7 +117,18 @@ if (!$result) {
     die("Error retrieving data: " . $conn->error);
 }
 
+// เมื่อผู้ใช้คลิกอนุมัติหรือไม่อนุมัติ
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['approve'])) {
+        $booking_id = $_POST['booking_id'];
+        approveBooking($booking_id, $_SESSION['personnel_id'], $conn, $telegramBotToken);
+    }
 
+    if (isset($_POST['reject'])) {
+        $booking_id = $_POST['booking_id'];
+        rejectBooking($booking_id, $_SESSION['personnel_id'], $conn, $telegramBotToken);
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -154,7 +244,7 @@ if (!$result) {
         /* สีแดง */
 
     }
-    
+
     .footer {
         width: 100%;
         background-color: #f8f9fa;
@@ -440,17 +530,19 @@ if (!$result) {
                                         </div>
                                         <div class="modal-footer">
                                             <!-- ปุ่มอนุมัติ -->
-                                            <form method="POST" action="approve.php" style="display:inline;">
+                                            <form method="POST" action="">
                                                 <input type="hidden" name="booking_id"
                                                     value="<?php echo $row['Booking_ID']; ?>">
-                                                <button type="submit" class="btn btn-success">อนุมัติ</button>
+                                                <button type="submit" name="approve"
+                                                    class="btn btn-success">อนุมัติ</button>
                                             </form>
 
                                             <!-- ปุ่มไม่อนุมัติ -->
-                                            <form method="POST" action="reject.php" style="display:inline;">
+                                            <form method="POST" action="">
                                                 <input type="hidden" name="booking_id"
                                                     value="<?php echo $row['Booking_ID']; ?>">
-                                                <button type="submit" class="btn btn-danger">ไม่อนุมัติ</button>
+                                                <button type="submit" name="reject"
+                                                    class="btn btn-danger">ไม่อนุมัติ</button>
                                             </form>
 
                                             <!-- ปุ่มปิด -->
