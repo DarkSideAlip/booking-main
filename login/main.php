@@ -1,6 +1,54 @@
 <?php
 session_start();
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
+include 'db_connect.php';
+
+// ดึงข้อมูลจำนวนห้องในแต่ละสถานะ
+$sql_pending = "SELECT COUNT(*) AS rooms_pending FROM booking WHERE Status_ID = 1";
+$sql_approved = "SELECT COUNT(*) AS rooms_approved FROM booking WHERE Status_ID = 2";
+$sql_rejected = "SELECT COUNT(*) AS rooms_rejected FROM booking WHERE Status_ID = 3";
+$sql_all = "SELECT COUNT(*) AS total_rooms FROM booking";
+
+// ส่งคำสั่ง SQL ไปยังฐานข้อมูล
+$result_pending = $conn->query($sql_pending);
+$result_approved = $conn->query($sql_approved);
+$result_rejected = $conn->query($sql_rejected);
+$result_all = $conn->query($sql_all);
+
+// ตรวจสอบผลลัพธ์
+if ($result_pending->num_rows > 0) {
+    $pending = $result_pending->fetch_assoc();
+    $rooms_pending = $pending['rooms_pending'];
+} else {
+    $rooms_pending = 0;
+}
+
+if ($result_approved->num_rows > 0) {
+    $approved = $result_approved->fetch_assoc();
+    $rooms_approved = $approved['rooms_approved'];
+} else {
+    $rooms_approved = 0;
+}
+
+if ($result_rejected->num_rows > 0) {
+    $rejected = $result_rejected->fetch_assoc();
+    $rooms_rejected = $rejected['rooms_rejected'];
+} else {
+    $rooms_rejected = 0;
+}
+
+if ($result_all->num_rows > 0) {
+    $all = $result_all->fetch_assoc();
+    $total_rooms = $all['total_rooms'];
+} else {
+    $total_rooms = 0;
+}
+
+
+
+$conn->close();
+
+
 ?>
 
 <!DOCTYPE html>
@@ -32,6 +80,14 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         .booking-dot {
             width: 8px;
             height: 8px;
+        }
+
+        .activing {
+            margin-top: 15px;
+        }
+
+        .disactiving {
+            margin-top: 15px;
         }
     }
 
@@ -130,7 +186,8 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         width: 100%;
         margin-bottom: 100px;
         /* กำหนดระยะห่างระหว่างปฏิทินกับ footer */
-        flex-wrap: wrap; /* ช่วยให้รายการที่เกินขนาดไปยังบรรทัดถัดไป */
+        flex-wrap: wrap;
+        /* ช่วยให้รายการที่เกินขนาดไปยังบรรทัดถัดไป */
     }
 
     .text-center2 {
@@ -147,7 +204,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
     .container-custom-2 {
         background-color: #fff;
-        padding: 20px;
+        padding: 30px;
         display: flex;
         border-radius: 5px;
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
@@ -328,7 +385,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     .upcoming {
         width: 350px;
         height: 160px;
-        background-color:rgb(1, 66, 136);
+        background-color: rgb(1, 66, 136);
         border-radius: 10px;
         margin-right: 15px;
     }
@@ -336,15 +393,15 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     .activing {
         width: 350px;
         height: 160px;
-        background-color:rgb(0, 79, 3);
+        background-color: rgb(0, 79, 3);
         border-radius: 10px;
-        margin-right: 15px; 
+        margin-right: 15px;
     }
 
     .disactiving {
         width: 350px;
         height: 160px;
-        background-color:rgb(124, 106, 0);
+        background-color: rgb(124, 106, 0);
         border-radius: 10px;
         margin-right: 15px;
     }
@@ -353,7 +410,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         width: 350px;
         height: 160px;
         margin-top: 15px;
-        background-color:rgb(106, 1, 1);
+        background-color: rgb(106, 1, 1);
         border-radius: 10px;
         margin-right: 15px;
     }
@@ -361,14 +418,12 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     .allbooking {
         width: 350px;
         height: 160px;
-        background-color:rgb(72, 1, 81);
+        background-color: rgb(72, 1, 81);
         margin-top: 15px;
         border-radius: 10px;
         margin-right: 15px;
 
     }
-
-
     </style>
 </head>
 
@@ -507,37 +562,39 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         </div>
         <div class="container-custom-2">
             <div class="upcoming">
-                <div style="padding: 20px; font-size: 30px;">
-                    <i class="fa-solid fa-user-check" style="color: #ffffff;"></i>
-                </div>
-                    <div style="display: block;">
-                        <div style="display: flex;">รายการจองห้องของฉัน</div>
-                        <div></div>
+                <div style="display: flex; position: relative;">
+                    <div style="padding: 20px; font-size: 30px;">
+                        <i class="fa-solid fa-user-check" style="color: #ffffff;"></i>
                     </div>
+                    <div style="position: absolute; right: 0; padding: 15px;">
+                        <div style="color: #ffffff;">รายการจองของฉัน</div>
+                        <div style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);"><?php echo $rooms_pending; ?></div>
+                    </div>
+                </div>
                 <hr>
                 <div style="color: #ffffff; font-size: 16px; margin-left: 16px;">จองห้อง รอตรวจสอบ</div>
             </div>
             <div class="activing">
-                <div>
+                <div style="display: flex; position: relative;">
                     <div style="padding: 20px; font-size: 30px;">
                         <i class="fa-solid fa-check" style="color: #ffffff;"></i>
                     </div>
-                    <div>   
-                        <div></div>
-                        <div></div>
+                    <div style="position: absolute; right: 0; padding: 15px;">
+                        <div style="color: #ffffff;">รายการจองของฉัน</div>
+                        <div style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);"><?php echo $rooms_approved; ?></div>
                     </div>
                 </div>
                 <hr>
                 <div style="color: #ffffff; font-size: 16px; margin-left: 16px;">จองห้อง อนุมัติ</div>
             </div>
             <div class="disactiving">
-                <div>
+                <div style="display: flex; position: relative;">
                     <div style="padding: 20px; font-size: 30px;">
                         <i class="fa-solid fa-xmark" style="color: #ffffff;"></i>
                     </div>
-                    <div>
-                        <div></div>
-                        <div></div>
+                    <div style="position: absolute; right: 0; padding: 15px;">
+                        <div style="color: #ffffff;">รายการจองของฉัน</div>
+                        <div style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);"><?php echo $rooms_rejected; ?></div>
                     </div>
                 </div>
                 <hr>
@@ -545,26 +602,26 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
             </div>
 
             <div class="allbooking">
-                <div>
+                <div style="display: flex; position: relative;">
                     <div style="padding: 20px; font-size: 30px;">
                         <i class="fa-solid fa-book" style="color: #ffffff;"></i>
                     </div>
-                    <div>
-                        <div></div>
-                        <div></div>
+                    <div style="position: absolute; right: 0; padding: 15px;">
+                        <div style="color: #ffffff;">สามารถอนุมัติได้</div>
+                        <div style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);"><?php echo $rooms_pending; ?></div>
                     </div>
                 </div>
                 <hr>
                 <div style="color: #ffffff; font-size: 16px; margin-left: 16px;">จองห้อง รอตรวจสอบ</div>
             </div>
             <div class="allroom">
-                <div>
+                <div style="display: flex; position: relative;">
                     <div style="padding: 20px; font-size: 30px;">
                         <i class="fa-solid fa-building" style="color: #ffffff;"></i>
                     </div>
-                    <div>
-                        <div></div>
-                        <div></div>
+                    <div style="position: absolute; right: 0; padding: 15px;">
+                        <div style="color: #ffffff;">ห้อง</div>
+                        <div style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);"><?php echo $total_rooms; ?></div>
                     </div>
                 </div>
                 <hr>
@@ -749,10 +806,6 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
     /* ดึงข้อมูลจากฐานข้อมูลและแสดงปฏิทิน */
     fetchBookings();
-
-
-
-   
     </script>
 
 
