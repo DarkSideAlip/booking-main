@@ -1,6 +1,16 @@
 <?php
 include 'db_connect.php';
 
+// กำหนด IP Address ของเจ้าของเซิร์ฟเวอร์
+$allowed_ip = '::1'; // เปลี่ยนเป็น IP ของคุณที่อนุญาตให้เข้าถึง
+
+// ตรวจสอบ IP Address ของผู้ที่เข้าถึง
+if ($_SERVER['REMOTE_ADDR'] !== $allowed_ip) {
+    die("<div class='alert alert-danger'>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</div>");
+
+}
+
+
 $secret_code = "12345"; // รหัสลับที่ต้องกรอกก่อนลงทะเบียน
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {

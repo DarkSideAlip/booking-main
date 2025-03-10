@@ -43,11 +43,7 @@ if ($result_all->num_rows > 0) {
 } else {
     $total_rooms = 0;
 }
-
-
-
 $conn->close();
-
 
 ?>
 
@@ -60,6 +56,7 @@ $conn->close();
     <title>หน้าหลัก</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="login/LOGO.png" sizes="32x32">
     <style>
     @media (max-width: 991px) {
         #navbarNav {
@@ -785,7 +782,7 @@ $conn->close();
             // หากไม่มีรายการจอง
             modalTitle.textContent = `ไม่มีรายการจอง (${date})`;
             modalBody.innerHTML =
-                `<p style="text-align: center; font-weight: bold; color: red;">ไม่มีการจองในวันนี้</p>`;
+                `<p style="text-align: center; color: red;">ไม่มีการจองในวันนี้ :)</p>`;
         }
 
         // เปิด Modal
