@@ -4,7 +4,52 @@ session_start();
 // หากล็อกอินแล้ว จะแสดงข้อมูลสมาชิกได้
 include 'db_connect.php';
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
+
+// ถ้าเป็นการเพิ่มข้อมูลใหม่
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($_POST['personnel_id'])) {
+    // ดึงข้อมูลจากฟอร์ม
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+    $first_name = $_POST['first_name'];
+    $last_name = $_POST['last_name'];
+    $position_id = $_POST['position_id'];
+    $subject_group_id = $_POST['subject_group_id'];
+    $phone = $_POST['phone'];
+    $email = $_POST['email'];
+    $role_id = $_POST['role_id'];
+    $telegram_id = $_POST['telegram_id'];
+
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+    // เพิ่มข้อมูลใหม่
+    $sql = "INSERT INTO personnel (Username, Password, First_Name, Last_Name, Position_ID, Subject_Group_ID, Phone, Email, Role_ID, Telegram_ID) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ssssiissis", $username, $hashed_password, $first_name, $last_name, $position_id, $subject_group_id, $phone, $email, $role_id, $telegram_id);
+
+    if ($stmt->execute()) {
+        $_SESSION['message'] = "<div class='alert alert-success'>ลงทะเบียนสำเร็จ!</div>";
+    } else {
+        $_SESSION['message'] = "<div class='alert alert-danger'>เกิดข้อผิดพลาด: " . $stmt->error . "</div>";
+    }
+}
+
+if (isset($_GET['id'])) {
+    $personnel_id = $_GET['id'];
+    $sql = "SELECT * FROM personnel WHERE personnel_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $personnel_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $userData = $result->fetch_assoc();
+    echo json_encode($userData);
+}
+
+
+
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -15,6 +60,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     <title>สมาชิก</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/2.1.7/css/dataTables.bootstrap5.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
     @media (max-width: 991px) {
         #navbarNav {
@@ -110,6 +156,16 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         overflow: hidden;
     }
 
+    .table td,
+    .table th {
+        padding-top: 15px;  /* Padding ด้านบน */
+        padding-bottom: 15px; /* Padding ด้านล่าง */
+        text-align: center;
+        /* จัดกึ่งกลางแนวนอน */
+        vertical-align: middle;
+        /* จัดกึ่งกลางแนวตั้ง */
+    }
+
     th,
     td {
         border: 1px solid #e0e0e0;
@@ -160,6 +216,19 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     .dropdown-menu .dropdown-item:hover {
         background-color: #495057;
         color: #ffffff;
+    }
+
+    .button-container {
+        display: flex;
+        justify-content: flex-end; /* ทำให้ปุ่มไปอยู่ทางขวา */
+        width: 100%;
+    }
+
+    .add-user {
+        width: 140px; 
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
     </style>
 </head>
@@ -255,9 +324,22 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
     <div class="full-height">
         <div class="text-center bg-dark">
-            <div style="font-size: 20px">รายการสมาชิก</div>
+            <div style="font-size: 20px; width: 100%; text-align: left;">รายการสมาชิก</div>
+            <div class="button-container">
+                <button class="add-user btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="fa-solid fa-user-plus" style="margin-right: 5px;"></i>
+                    <div style="font-size: 15px;">เพิ่มผู้ใช้งาน</div>
+                </button>
+            </div>
         </div>
         <div class="container-custom">
+            <!-- แสดงข้อความที่นี่ -->
+            <?php
+            if (isset($_SESSION['message'])) {
+                echo $_SESSION['message'];
+                unset($_SESSION['message']);
+            }
+            ?>
             <table id="member-table" class="table table-striped" style="width:100%">
                 <thead>
                     <tr>
@@ -267,6 +349,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
                         <th>ชื่อผู้ใช้ (Username)</th>
                         <th>ตำแหน่ง (Position)</th>
                         <th>สถานะ (Role)</th>
+                        <th>เหตุผล (Reason)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -315,9 +398,15 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
                                     break;
                             }
                             echo "<td>" . $role_id . "</td>";
-                            
+                            // เพิ่มลิงก์แก้ไขในตาราง
+                            echo "<td>
+                                <a href='#' class='btn btn-outline-warning btn-sm' data-bs-toggle='modal' data-bs-target='#editUserModal' onclick='editUser(" . $row['personnel_id'] . ")'>แก้ไข</a>
+                                <a href='delete_member.php?id=" . $row['personnel_id'] . "' class='btn btn-outline-danger btn-sm' onclick='return confirm(\"คุณแน่ใจว่าต้องการลบผู้ใช้งานนี้?\")'>ลบ</a>
+                            </td>";
+
+
                             echo "</tr>";
-                        }
+                        }            
                     } else {
                         // ถ้าไม่มีข้อมูลสมาชิกให้แสดงข้อความแจ้ง
                         echo "<tr><td colspan='5'>ไม่พบข้อมูลสมาชิก</td></tr>";
@@ -330,6 +419,173 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         </div>
     </div>
 
+    <!-- Modal สำหรับเพิ่มผู้ใช้งาน -->
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addUserModalLabel">เพิ่มผู้ใช้งานใหม่</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- แบบฟอร์มกรอกข้อมูลผู้ใช้งาน -->
+                    <form action="members.php" method="post">
+                        <div class="mb-3">
+                            <label for="first_name" class="form-label">ชื่อ</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="last_name" class="form-label">นามสกุล</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">ชื่อผู้ใช้</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">รหัสผ่าน</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="role_id" class="form-label">สถานะ</label>
+                            <select class="form-select" id="role_id" name="role_id" required>
+                                <option value="1">ผู้ใช้</option>
+                                <option value="2">Admin</option>
+                                <option value="3">ผู้อนุมัติ</option>
+                                <option value="4">รอง</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subject_group_id" class="form-label">กลุ่มสาระการเรียนรู้</label>
+                            <select name="subject_group_id" id="subject_group_id" class="form-select" required>
+                                 <option value="1">กลุ่มสาระการเรียนรู้ภาษาไทย</option>
+                                 <option value="2">กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม</option>
+                                 <option value="3">กลุ่มสาระการเรียนรู้คณิตศาสตร์</option>
+                                 <option value="4">กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี</option>
+                                 <option value="5">กลุ่มสาระการเรียนรู้ภาษาต่างประเทศ</option>
+                                 <option value="6">กลุ่มสาระการงานอาชีพและเทคโนโลยี</option>
+                                 <option value="7">กลุ่มสาระศิลปะ ดนตรี นาฏศิลป์</option>
+                                 <option value="8">กลุ่มสาระสุขศึกษา พลศึกษา</option>
+                                 <option value="9">แนะแนวและห้องสมุด</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">เบอร์โทรศัพท์</label>
+                            <input type="text" name="phone" id="phone" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">อีเมล</label>
+                            <input type="email" name="email" class="form-control" id="email" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="telegram_id" class="form-label">ไอดีเทเลแกรม</label>
+                            <input type="text" name="telegram_id" class="form-control" id="telegram_id" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="position_id" class="form-label">บทบาท</label>
+                            <select name="position_id" class="form-select" id="position_id" required>
+                                <option value="1">ผู้บริหาร</option>
+                                <option value="2">ครู</option>
+                                <option value="3">บุคลากรทางการศึกษา</option>
+                            </select>
+                        </div>     
+
+                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับแก้ไขผู้ใช้งาน -->
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUserModalLabel">แก้ไขข้อมูลผู้ใช้งาน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- แบบฟอร์มกรอกข้อมูลผู้ใช้งาน -->
+                    <form action="edit_user.php" method="post">
+                        <input type="hidden" name="personnel_id" id="edit_personnel_id">
+                        <div class="mb-3">
+                            <label for="edit_first_name" class="form-label">ชื่อ</label>
+                            <input type="text" class="form-control" id="edit_first_name" name="first_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_last_name" class="form-label">นามสกุล</label>
+                            <input type="text" class="form-control" id="edit_last_name" name="last_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_username" class="form-label">ชื่อผู้ใช้</label>
+                            <input type="text" class="form-control" id="edit_username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_password" class="form-label">รหัสผ่าน</label>
+                            <input type="password" class="form-control" id="edit_password" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_role_id" class="form-label">สถานะ</label>
+                            <select class="form-select" id="edit_role_id" name="role_id" required>
+                                <option value="1">ผู้ใช้</option>
+                                <option value="2">Admin</option>
+                                <option value="3">ผู้อนุมัติ</option>
+                                <option value="4">รอง</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_subject_group_id" class="form-label">กลุ่มสาระการเรียนรู้</label>
+                            <select name="subject_group_id" id="edit_subject_group_id" class="form-select" required>
+                                <option value="1">กลุ่มสาระการเรียนรู้ภาษาไทย</option>
+                                <option value="2">กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม</option>
+                                <option value="3">กลุ่มสาระการเรียนรู้คณิตศาสตร์</option>
+                                <option value="4">กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี</option>
+                                <option value="5">กลุ่มสาระการเรียนรู้ภาษาต่างประเทศ</option>
+                                <option value="6">กลุ่มสาระการงานอาชีพและเทคโนโลยี</option>
+                                <option value="7">กลุ่มสาระศิลปะ ดนตรี นาฏศิลป์</option>
+                                <option value="8">กลุ่มสาระสุขศึกษา พลศึกษา</option>
+                                <option value="9">แนะแนวและห้องสมุด</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_phone" class="form-label">เบอร์โทรศัพท์</label>
+                            <input type="text" name="phone" id="edit_phone" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_email" class="form-label">อีเมล</label>
+                            <input type="email" name="email" class="form-control" id="edit_email" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_telegram_id" class="form-label">ไอดีเทเลแกรม</label>
+                            <input type="text" name="telegram_id" class="form-control" id="edit_telegram_id" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_position_id" class="form-label">บทบาท</label>
+                            <select name="position_id" class="form-select" id="edit_position_id" required>
+                                <option value="1">ผู้บริหาร</option>
+                                <option value="2">ครู</option>
+                                <option value="3">บุคลากรทางการศึกษา</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">บันทึกการแก้ไข</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
     <!-- Footer -->
     <div class="footer">
         Copyright 2025 © - BangWa Developer
@@ -338,14 +594,64 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     <!-- JavaScript -->
     <script src="js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/2.1.7/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.1.7/js/dataTables.bootstrap5.js"></script>
+
     <script>
     $(document).ready(function() {
         $('#member-table').dataTable();
     });
+
+
     </script>
 
-</body>
+    <script>
+        function editUser(personnel_id) {
+            // ส่งคำขอ AJAX เพื่อดึงข้อมูลผู้ใช้งานจากฐานข้อมูล
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "get_user_data.php?id=" + personnel_id, true);
+            xhr.onload = function() {
+                if (xhr.status == 200) {
+                    try {
+                        // ถ้าคำขอสำเร็จและได้รับข้อมูลที่ถูกต้องจากฐานข้อมูล
+                        var userData = JSON.parse(xhr.responseText);
 
+                        // ตรวจสอบว่ามีข้อมูลหรือไม่
+                        if (userData && userData.first_name) {
+                            // เติมข้อมูลที่ดึงมาจากฐานข้อมูลลงในฟอร์มใน Modal
+
+                            document.getElementById('edit_personnel_id').value = userData.personnel_id || ''; 
+                            document.getElementById('edit_first_name').value = userData.first_name || 'ไม่มีข้อมูล';
+                            document.getElementById('edit_last_name').value = userData.last_name || 'ไม่มีข้อมูล';
+                            document.getElementById('edit_username').value = userData.username || 'ไม่มีข้อมูล';
+                            document.getElementById('edit_phone').value = userData.phone || 'ไม่มีข้อมูล';
+                            document.getElementById('edit_email').value = userData.email || 'ไม่มีข้อมูล';
+                            document.getElementById('edit_telegram_id').value = userData.telegram_id || 'ไม่มีข้อมูล';
+
+                            // ปรับค่าอื่นๆ ตามข้อมูลที่ได้จากฐานข้อมูล
+                            document.getElementById('edit_role_id').value = userData.role_id || '';
+                            document.getElementById('edit_position_id').value = userData.position_id || '';
+                            document.getElementById('edit_subject_group_id').value = userData.subject_group_id || '';
+
+                            // เปิด Modal
+                            var myModal = new bootstrap.Modal(document.getElementById('editUserModal'), {});
+                            myModal.show();
+                        } else {
+                            console.error('ไม่พบข้อมูลผู้ใช้');
+                            alert('ไม่พบข้อมูลผู้ใช้');
+                        }
+                    } catch (error) {
+                        console.error('Error parsing JSON response: ', error);
+                    }
+                } else {
+                    console.error('Error loading user data: ', xhr.statusText);
+                }
+            };
+            xhr.send();
+        }
+    </script>
+    
+
+</body>
 </html>

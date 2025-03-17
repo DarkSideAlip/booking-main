@@ -43,6 +43,7 @@ $result = $conn->query($sql);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>รายงาน</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.1.7/css/dataTables.bootstrap5.css">
     <style>
     @media (max-width: 991px) {
         #navbarNav {
@@ -72,6 +73,8 @@ $result = $conn->query($sql);
 
     .table td,
     .table th {
+        padding-top: 15px;  /* Padding ด้านบน */
+        padding-bottom: 15px; /* Padding ด้านล่าง */
         text-align: center;
         /* จัดกึ่งกลางแนวนอน */
         vertical-align: middle;
@@ -308,39 +311,39 @@ $result = $conn->query($sql);
                     </thead>
                     <tbody>
                         <?php
-                $result = $conn->query($sql);
-                if ($result && $result->num_rows > 0):
-                    while ($row = $result->fetch_assoc()): ?>
-                        <tr>
-                            <td><?php echo $row['Booking_ID']; ?></td>
-                            <td><?php echo htmlspecialchars($row['Topic_Name']); ?></td>
-                            <td><?php echo htmlspecialchars($row['Hall_Name']); ?></td>
-                            <td><?php echo htmlspecialchars($row['Booker_Name']); ?></td>
-                            <td>
-                                <?php echo htmlspecialchars($row['Date_Start']) . ' ' . 
-                                        htmlspecialchars($row['Time_Start']) . ' - ' . 
-                                        htmlspecialchars($row['Time_End']); ?>
-                            </td>
-                            <td><?php echo htmlspecialchars($row['Attendee_Count']); ?></td>
-                            <td>
-                                <?php if ($row['Status_Name'] == 'รอตรวจสอบ'): ?>
-                                <span class="text-warning">รอตรวจสอบ</span>
-                                <?php elseif ($row['Status_Name'] == 'อนุมัติ'): ?>
-                                <span class="text-success">อนุมัติ</span>
-                                <?php elseif ($row['Status_Name'] == 'ไม่อนุมัติ'): ?>
-                                <span class="text-danger">ไม่อนุมัติ</span>
-                                <?php else: ?>
-                                <span class="text-muted">ไม่ทราบสถานะ</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endwhile; ?>
+                        if ($result && $result->num_rows > 0):
+                            while ($row = $result->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?php echo $row['Booking_ID']; ?></td>
+                                    <td><?php echo htmlspecialchars($row['Topic_Name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['Hall_Name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['Booker_Name']); ?></td>
+                                    <td>
+                                        <?php echo htmlspecialchars($row['Date_Start']) . ' ' . 
+                                            htmlspecialchars($row['Time_Start']) . ' - ' . 
+                                            htmlspecialchars($row['Time_End']); ?>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($row['Attendee_Count']); ?></td>
+                                    <td>
+                                        <?php if ($row['Status_Name'] == 'รอตรวจสอบ'): ?>
+                                        <span class="text-warning">รอตรวจสอบ</span>
+                                        <?php elseif ($row['Status_Name'] == 'อนุมัติ'): ?>
+                                        <span class="text-success">อนุมัติ</span>
+                                        <?php elseif ($row['Status_Name'] == 'ไม่อนุมัติ'): ?>
+                                        <span class="text-danger">ไม่อนุมัติ</span>
+                                        <?php else: ?>
+                                        <span class="text-muted">ไม่ทราบสถานะ</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
                         <?php else: ?>
                         <tr>
                             <td colspan="7" class="text-center">ไม่มีข้อมูล</td>
                         </tr>
                         <?php endif; ?>
                     </tbody>
+
                 </table>
             </div>
         </div>
@@ -360,7 +363,7 @@ $result = $conn->query($sql);
     <script src="https://cdn.datatables.net/2.1.7/js/dataTables.bootstrap5.js"></script>
     <script>
     $(document).ready(function() {
-        $('#member-table').dataTable();
+        $('#member-table').DataTable(); // ใช้ DataTables แบบพื้นฐาน
     });
     </script>
 

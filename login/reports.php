@@ -139,6 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>รายงาน</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.1.7/css/dataTables.bootstrap5.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 
     <style>
@@ -177,6 +178,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     /* จัดข้อความให้อยู่กึ่งกลางทั้งแนวตั้งและแนวนอน */
     .table td,
     .table th {
+        padding-top: 15px;  /* Padding ด้านบน */
+        padding-bottom: 15px; /* Padding ด้านล่าง */
         text-align: center;
         /* จัดกึ่งกลางแนวนอน */
         vertical-align: middle;
@@ -421,7 +424,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <th>จำนวนผู้เข้าร่วม</th>
                         <th>สถานะ</th>
                         <th>ผู้อนุมัติ</th>
-                        <th>เหตุผล</th>
+                        <th>เหตุผล (Reason)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -567,8 +570,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-
-
     </div>
 
     <!-- Footer -->
@@ -585,13 +586,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $(document).ready(function() {
         $('#member-table').dataTable();
     });
-
-
     // รีเฟรช DataTables หลังลบข้อมูล
     $('#member-table').DataTable().ajax.reload(null, false);
     </script>
-
-
 
 </body>
 
