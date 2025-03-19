@@ -4,6 +4,30 @@ session_start();
 // หากล็อกอินแล้ว จะแสดงข้อมูลห้องประชุมได้
 include 'db_connect.php';
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
+
+// ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header('Location: index.php');
+    exit;
+}
+
+// ดึงข้อมูลจากตาราง hall
+$sql = "SELECT Hall_ID, Hall_Name, Hall_Detail, Hall_Size, Capacity, Status_Hall FROM HALL";
+$stmt = $conn->prepare($sql);
+$stmt->execute();
+$result = $stmt->get_result();
+
+// ดึงข้อมูลสมาชิกที่ต้องการแก้ไข
+if (isset($_GET['id'])) {
+    $personnel_id = $_GET['id'];
+    $sql = "SELECT * FROM HALL WHERE Hall_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $Hall_ID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $userData = $result->fetch_assoc();
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -15,6 +39,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     <title>จองห้อง</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/2.1.7/css/dataTables.bootstrap5.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
     @media (max-width: 991px) {
         #navbarNav {
@@ -110,6 +135,14 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         overflow: hidden;
     }
 
+    .table td,
+    .table th {
+        text-align: center;
+        /* จัดกึ่งกลางแนวนอน */
+        vertical-align: middle;
+        /* จัดกึ่งกลางแนวตั้ง */
+    }
+
     th,
     td {
         border: 1px solid #e0e0e0;
@@ -161,12 +194,25 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
         background-color: #495057;
         color: #ffffff;
     }
+
+    .add-room {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .button-container {
+        display: flex;
+        justify-content: flex-end; /* ทำให้ปุ่มไปอยู่ทางขวา */
+        width: 100%;
+    }
+
     </style>
 </head>
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -219,7 +265,7 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
                     </li>
                     <li class="nav-item">
                         <a href="settings.php"
-                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">ตั้งค่า</a>
+                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">สถิติ</a>
                     </li>
                     <?php elseif ($_SESSION['role_id'] == 3 || $_SESSION['role_id'] == 4): ?>
                     <li class="nav-item">
@@ -257,22 +303,40 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
 
     <div class="full-height">
         <div class="text-center bg-dark">
-            <div style="font-size: 20px">รายการห้อง</div>
+            <div style="font-size: 20px; width: 100%; text-align: left;">รายการห้อง</div>
+            <?php
+            // ตรวจสอบว่า role_id ของผู้ใช้เป็น Admin หรือไม่
+            if (isset($_SESSION['role_id']) && $_SESSION['role_id'] == 2) {
+                echo '<div class="button-container">
+                    <button class="add-room btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#addRoomModal">
+                        <div style="font-size: 15px;">เพิ่มห้อง</div>
+                    </button>
+                </div>';
+            }
+            ?>
         </div>
         <div class="container-custom">
+            <!-- แสดงข้อความที่นี่ -->
+            <?php
+                if (isset($_SESSION['message'])) {
+                    echo $_SESSION['message'];
+                    unset($_SESSION['message']);
+                }
+            ?>
             <table id="booking-table" class="table table-striped" style="width:100%">
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>ห้อง (room)</th>
                         <th>รายละเอียด</th>
+                        <th>สถานะของห้อง</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php
                 // ดึงข้อมูลห้องจากฐานข้อมูล
-                $sql = "SELECT Hall_ID, Hall_Name, Hall_Detail FROM HALL";
+                $sql = "SELECT Hall_ID, Hall_Name, Hall_Detail, Status_Hall, Hall_Size, Capacity FROM HALL";
                 $result = $conn->query($sql);
 
                 if ($result->num_rows > 0) {
@@ -283,19 +347,47 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
                         echo "<td>" . $row['Hall_ID'] . "</td>";
                         echo "<td>" . $row['Hall_Name'] . "</td>";
                         echo "<td>" . $row['Hall_Detail'] . "</td>";
+                        // แปลง Status_Hall เป็นข้อความ
+                        $status_text = "";
+                        if ($row['Status_Hall'] == 1) {
+                                $status_text = "เปิดการใช้งาน"; // ถ้า Status_Hall เป็น 1 แสดงว่า "เปิด"
+                            } else {
+                                $status_text = "ปิดการใข้งาน"; // ถ้า Status_Hall เป็น 0 แสดงว่า "ปิด"
+                            }
+                        echo "<td>" . $status_text . "</td>";
                         echo "<td>";
 
                         
-                        // ตรวจสอบการล็อกอินก่อนแสดงปุ่มจอง
-                        if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
-                            // ถ้าล็อกอินแล้ว ให้แสดงปุ่มจองห้องที่สามารถคลิกได้
-                            echo "<button class='btn btn-outline-dark m-1' onclick=\"window.location.href='booking_form.php?hall_id=" . $row['Hall_ID'] . "';\">จองห้อง</button>";
+                        // ตรวจสอบสถานะห้อง ถ้าสถานะเป็น 2 (ปิดการใช้งาน) ซ่อนปุ่มจองห้อง
+                        if ($row['Status_Hall'] == 1) {
+                            // ถ้าห้องเปิดใช้งาน แสดงปุ่มจอง
+                            if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
+                                // ถ้าล็อกอินแล้ว ให้แสดงปุ่มจองห้องที่สามารถคลิกได้
+                                echo "<button class='btn btn-outline-dark btn-sm m-1' onclick=\"window.location.href='booking_form.php?hall_id=" . $row['Hall_ID'] . "';\">จองห้อง</button>";
+                            } else {
+                                // ถ้ายังไม่ได้ล็อกอิน ให้ปุ่มจองพาไปยังหน้าเข้าสู่ระบบ
+                                echo "<button class='btn btn-outline-dark btn-sm m-1' onclick=\"alert('กรุณาเข้าสู่ระบบก่อนจองห้อง'); window.location.href='index.php';\">จองห้อง</button>";
+                            }
                         } else {
-                            // ถ้ายังไม่ได้ล็อกอิน ให้ปุ่มจองพาไปยังหน้าเข้าสู่ระบบ
-                            echo "<button class='btn btn-outline-dark m-1' onclick=\"alert('กรุณาเข้าสู่ระบบก่อนจองห้อง'); window.location.href='index.php';\">จองห้อง</button>";
                         }
 
-                        echo "<button class='btn btn-outline-secondary m-1' data-bs-toggle='modal' data-bs-target='#roomDetailModal' onclick='loadRoomDetails(" . $row['Hall_ID'] . ")'>รายละเอียด</button>";
+                        echo "<button class='btn btn-outline-secondary btn-sm' data-bs-toggle='modal' data-bs-target='#roomDetailModal' onclick='loadRoomDetails(" . $row['Hall_ID'] . ")'>รายละเอียด</button>";
+                        // แสดงปุ่มแก้ไขห้อง เฉพาะแอดมิน
+                        if (isset($_SESSION['role_id']) && $_SESSION['role_id'] == 2) {
+                        echo "<button type='button' class='btn btn-outline-warning editBtn btn-sm m-1' 
+                                data-bs-toggle='modal' 
+                                data-bs-target='#editRoomModal'
+                                data-id='" . $row['Hall_ID'] . "'
+                                data-name='" . $row['Hall_Name'] . "'
+                                data-detail='" . $row['Hall_Detail'] . "'
+                                data-size='" . $row['Hall_Size'] . "'
+                                data-capacity='" . $row['Capacity'] . "'
+                                data-status='" . $row['Status_Hall'] . "'>
+                                <i class='fas fa-edit'></i> แก้ไข
+                            </button>";
+
+                        echo "<a href='delete_member.php?id=" . $row['personnel_id'] . "' class='btn btn-outline-danger btn-sm m-1' onclick='return confirm(\"คุณแน่ใจว่าต้องการลบห้องนี้?\")'>ลบ</a>";
+                        }
 
                         echo "</td>";
                         echo "</tr>";
@@ -309,6 +401,92 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
                 ?>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับเพิ่มห้อง -->
+    <div class="modal fade" id="addRoomModal" tabindex="-1" aria-labelledby="addRoomModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addRoomModalLabel">เพิ่มห้องใหม่</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="add_room.php" method="post">
+                        <input type="hidden" name="hall_id" id="hall_id">
+                        <div class="mb-3">
+                            <label for="hall_name" class="form-label">ชื่อห้อง</label>
+                            <input type="text" class="form-control" id="hall_name" name="hall_name" required>
+                        </div>
+                        <!-- คำอธิบายการจอง -->
+                        <div class="mb-3">
+                            <label for="hall_detail" class="form-label">รายละเอียดห้อง</label>
+                            <textarea id="hall_detail" name="hall_detail" class="form-control" rows="3"
+                                required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="hall_size" class="form-label">ขนาดห้อง</label>
+                            <input type="text" class="form-control" id="hall_size" name="hall_size" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="capacity" class="form-label">ความจุ</label>
+                            <input type="number" class="form-control" id="capacity" name="capacity" required min="1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="status_hall" class="form-label">สถานะห้อง</label>
+                            <select class="form-select" id="status_hall" name="status_hall" required>
+                                <option value="1">เปิดการใช้งาน</option>
+                                <option value="2">ปิดการใช้งาน</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">บันทึกห้อง</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับแก้ไขห้อง -->
+    <div class="modal fade" id="editRoomModal" tabindex="-1" aria-labelledby="editRoomModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editRoomModalLabel">แก้ไขห้อง</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="edit_room.php" method="post">
+                        <input type="hidden" name="hall_id" id="edit_hall_id">
+                        <div class="mb-3">
+                            <label for="edit_hall_name" class="form-label">ชื่อห้อง</label>
+                            <input type="text" class="form-control" id="edit_hall_name" name="hall_name" required>
+                        </div>
+                        <!-- คำอธิบายการจอง -->
+                        <div class="mb-3">
+                            <label for="edit_hall_detail" class="form-label">รายละเอียดห้อง</label>
+                            <textarea id="edit_hall_detail" name="hall_detail" class="form-control" rows="3"
+                                required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_hall_size" class="form-label">ขนาดห้อง</label>
+                            <input type="text" class="form-control" id="edit_hall_size" name="hall_size" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_capacity" class="form-label">ความจุ</label>
+                            <input type="number" class="form-control" id="edit_capacity" name="capacity" required min="1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_status_hall" class="form-label">สถานะห้อง</label>
+                            <select class="form-select" id="edit_status_hall" name="status_hall" required>
+                                <option value="1">เปิดการใช้งาน</option>
+                                <option value="2">ปิดการใช้งาน</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">บันทึกห้อง</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -341,12 +519,35 @@ include 'auth_check.php'; // เรียกใช้งานการตรว
     <!-- JavaScript -->
     <script src="js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/2.1.7/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.1.7/js/dataTables.bootstrap5.js"></script>
+
     <script>
     $(document).ready(function() {
         $('#booking-table').dataTable();
     });
+
+    $(document).ready(function() {
+        // เมื่อคลิกปุ่มแก้ไข
+        $('.editBtn').on('click', function() {
+            var hallId = $(this).data('id');
+            var hallName = $(this).data('name');
+            var hallDetail = $(this).data('detail');
+            var hallSize = $(this).data('size');
+            var capacity = $(this).data('capacity');
+            var status = $(this).data('status');
+
+            // ใส่ค่าลงในฟอร์มของ modal
+            $('#edit_hall_id').val(hallId);
+            $('#edit_hall_name').val(hallName);
+            $('#edit_hall_detail').val(hallDetail);
+            $('#edit_hall_size').val(hallSize);
+            $('#edit_capacity').val(capacity);
+            $('#edit_status_hall').val(status);
+        });
+    });
+
 
     function loadRoomDetails(hallId) {
         $.ajax({

@@ -218,7 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </li>
                     <li class="nav-item">
                         <a href="settings.php"
-                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">ตั้งค่า</a>
+                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">สถิติ</a>
                     </li>
                     <?php elseif ($_SESSION['role_id'] == 3 || $_SESSION['role_id'] == 4): ?>
                     <li class="nav-item">

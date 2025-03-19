@@ -43,14 +43,35 @@ function sendTelegramMessage($chatId, $message, $botToken) {
 // BOT Token ของคุณ
 $telegramBotToken = "7668345720:AAGIKyTGFQGUGiMOjbax5Mv9Y30Chydnqc4";
 
+// ดึงข้อมูล personnel_id จาก session
+$personnel_id = $_SESSION['personnel_id'];  // ตรวจสอบว่าผู้ใช้ล็อกอินอยู่
+
+// ดึง Role_ID ของผู้ใช้จากฐานข้อมูล
+$sql = "SELECT Role_ID FROM personnel WHERE Personnel_ID = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $personnel_id);
+$stmt->execute();
+$stmt->bind_result($user_role);  // เก็บ Role_ID ลงในตัวแปร $user_role
+$stmt->fetch();
+$stmt->close();
+
 // ฟังก์ชันการอนุมัติ
-function approveBooking($booking_id, $approver_id, $conn, $telegramBotToken) {
-    // อัปเดตสถานะการจองเป็น "อนุมัติ"
-    $sql = "UPDATE booking SET Status_ID = 2, Approver_ID = ? WHERE Booking_ID = ?";
+function approveBooking($booking_id, $approver_id, $conn, $telegramBotToken, $approval_stage) {
+    // กำหนดสถานะตามระยะการอนุมัติ
+    if ($approval_stage == 1) {
+        $status_id = 2; // อนุมัติระยะแรก
+    } elseif ($approval_stage == 2) {
+        $status_id = 4; // อนุมัติสุดท้าย
+    } else {
+        return; // ถ้าไม่มีระยะการอนุมัติที่ระบุ, ไม่ทำการอัปเดต
+    }
+
+    // อัปเดตสถานะการจองตามระยะการอนุมัติ
+    $sql = "UPDATE booking SET Status_ID = ?, Approver_ID = ?, Approval_Stage = ? WHERE Booking_ID = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ii", $approver_id, $booking_id);
+    $stmt->bind_param("iiii", $status_id, $approver_id, $approval_stage, $booking_id);
     $stmt->execute();
-    
+
     // ดึงข้อมูลผู้ใช้และห้องประชุม
     $sql = "SELECT p.Telegram_ID, h.Hall_Name, b.Topic_Name FROM booking b
             LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
@@ -61,9 +82,15 @@ function approveBooking($booking_id, $approver_id, $conn, $telegramBotToken) {
     $stmt->execute();
     $stmt->bind_result($telegram_id, $hall_name, $topic_name);
     $stmt->fetch();
-    
-    // ส่งข้อความไปยัง Telegram ว่าอนุมัติแล้ว
-    $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
+
+    // สร้างข้อความตามระยะการอนุมัติ
+    if ($approval_stage == 1) {
+        $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติเบื้องต้นแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
+    } elseif ($approval_stage == 2) {
+        $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติสุดท้ายแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
+    }
+
+    // ส่งข้อความไปยัง Telegram
     sendTelegramMessage($telegram_id, $message, $telegramBotToken);
 }
 
@@ -91,37 +118,105 @@ function rejectBooking($booking_id, $approver_id, $conn, $telegramBotToken) {
     sendTelegramMessage($telegram_id, $message, $telegramBotToken);
 }
 
-$sql = "SELECT 
-            b.Booking_ID,
-            CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name,
-            b.Date_Start,
-            b.Time_Start,
-            b.Time_End,
-            h.Hall_Name,
-            b.Attendee_Count,
-            b.Topic_Name,
-            b.Booking_Detail,
-            s.Status_ID,
-            CONCAT(a.First_Name, ' ', a.Last_Name) AS Approver_Name
-        FROM 
-            booking b
-        LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
-        LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
-        LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
-        LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
-        ORDER BY b.Booking_ID DESC";
+// ตรวจสอบการเข้าสู่ระบบและ Role_ID ของผู้ใช้
+$user_role = $_SESSION['role_id']; // ค่า Role_ID ของผู้ใช้งานจากการเข้าสู่ระบบ
 
+// กำหนด SQL query ตาม Role_ID
+if ($user_role == 2) { // Admin
+    $sql = "SELECT 
+                b.Booking_ID,
+                b.Topic_Name,
+                h.Hall_Name,
+                CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name,
+                b.Date_Start,
+                b.Time_Start,
+                b.Time_End,
+                b.Attendee_Count,
+                s.Status_ID,
+                CONCAT(a.First_Name, ' ', a.Last_Name) AS Approver_Name
+            FROM 
+                booking b
+            LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+            LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
+            LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
+            LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
+            ORDER BY b.Booking_ID DESC";
+} elseif ($user_role == 3) { // ผู้อนุมัติ (สามารถดูเฉพาะอนุมัติระยะแรก)
+    $sql = "SELECT 
+                b.Booking_ID,
+                b.Topic_Name,
+                h.Hall_Name,
+                CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name,
+                b.Date_Start,
+                b.Time_Start,
+                b.Time_End,
+                b.Attendee_Count,
+                s.Status_ID,
+                CONCAT(a.First_Name, ' ', a.Last_Name) AS Approver_Name
+            FROM 
+                booking b
+            LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+            LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
+            LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
+            LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
+            WHERE s.Status_ID = 2  -- เฉพาะอนุมัติระยะแรก
+            ORDER BY b.Booking_ID DESC";
+} elseif ($user_role == 4) { // รอง (สามารถดูเฉพาะอนุมัติระยะแรก)
+    $sql = "SELECT 
+                b.Booking_ID,
+                b.Topic_Name,
+                h.Hall_Name,
+                CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name,
+                b.Date_Start,
+                b.Time_Start,
+                b.Time_End,
+                b.Attendee_Count,
+                s.Status_ID,
+                CONCAT(a.First_Name, ' ', a.Last_Name) AS Approver_Name
+            FROM 
+                booking b
+            LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+            LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
+            LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
+            LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
+            WHERE s.Status_ID = 1  -- เฉพาะรอตรวจสอบ (อนุมัติระยะแรก)
+            ORDER BY b.Booking_ID DESC";
+} else { // ผู้ใช้ทั่วไป (Role_ID = 1) หรือกรณีอื่น ๆ
+    $sql = "SELECT 
+                b.Booking_ID,
+                b.Topic_Name,
+                h.Hall_Name,
+                CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name,
+                b.Date_Start,
+                b.Time_Start,
+                b.Time_End,
+                b.Attendee_Count,
+                s.Status_ID,
+                CONCAT(a.First_Name, ' ', a.Last_Name) AS Approver_Name
+            FROM 
+                booking b
+            LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+            LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
+            LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
+            LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
+            WHERE s.Status_ID = 1  -- เฉพาะรอตรวจสอบ (อนุมัติระยะแรก)
+            ORDER BY b.Booking_ID DESC";
+}
+
+// ดึงข้อมูลการจอง
 $result = $conn->query($sql);
 
 if (!$result) {
     die("Error retrieving data: " . $conn->error);
 }
 
+
 // เมื่อผู้ใช้คลิกอนุมัติหรือไม่อนุมัติ
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['approve'])) {
         $booking_id = $_POST['booking_id'];
-        approveBooking($booking_id, $_SESSION['personnel_id'], $conn, $telegramBotToken);
+        $approval_stage = $_POST['approval_stage'];  // รับค่าระยะการอนุมัติ
+        approveBooking($booking_id, $_SESSION['personnel_id'], $conn, $telegramBotToken, $approval_stage);
     }
 
     if (isset($_POST['reject'])) {
@@ -129,7 +224,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         rejectBooking($booking_id, $_SESSION['personnel_id'], $conn, $telegramBotToken);
     }
 }
+
+
+
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -178,8 +277,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     /* จัดข้อความให้อยู่กึ่งกลางทั้งแนวตั้งและแนวนอน */
     .table td,
     .table th {
-        padding-top: 15px;  /* Padding ด้านบน */
-        padding-bottom: 15px; /* Padding ด้านล่าง */
+        padding-top: 15px;
+        /* Padding ด้านบน */
+        padding-bottom: 15px;
+        /* Padding ด้านล่าง */
         text-align: center;
         /* จัดกึ่งกลางแนวนอน */
         vertical-align: middle;
@@ -375,7 +476,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </li>
                     <li class="nav-item">
                         <a href="settings.php"
-                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">ตั้งค่า</a>
+                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">สถิติ</a>
                     </li>
                     <?php elseif ($_SESSION['role_id'] == 3 || $_SESSION['role_id'] == 4): ?>
                     <li class="nav-item">
@@ -421,34 +522,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <th>ชื่อห้อง</th>
                         <th>ชื่อผู้จอง</th>
                         <th>วันที่และเวลา</th>
-                        <th>จำนวนผู้เข้าร่วม</th>
-                        <th>สถานะ</th>
-                        <th>ผู้อนุมัติ</th>
+                        <th>จำนวน</th>
+                        <th>สถานะ (Status)</th>
+                        <th>ผู้อนุมัติ (Approver)</th>
                         <th>เหตุผล (Reason)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php
-                // SQL สำหรับดึงข้อมูลจากฐานข้อมูล
+                // ดึงข้อมูลการจอง
                 $sql = "SELECT 
-                            b.Booking_ID,
-                            b.Topic_Name,
-                            h.Hall_Name,
-                            CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name,
-                            b.Date_Start,
-                            b.Time_Start,
-                            b.Time_End,
-                            b.Attendee_Count,
-                            s.Status_ID,
-                            CONCAT(a.First_Name, ' ', a.Last_Name) AS Approver_Name,
-                            b.Booking_Detail
-                        FROM 
-                            booking b
-                        LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
-                        LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
-                        LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
-                        LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
-                        ORDER BY b.Booking_ID DESC";
+                    b.Booking_ID,
+                    b.Topic_Name,
+                    h.Hall_Name,
+                    CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name,
+                    b.Date_Start,
+                    b.Time_Start,
+                    b.Time_End,
+                    b.Attendee_Count,
+                    s.Status_ID,
+                    s.Status_Name,
+                    CONCAT(a.First_Name, ' ', a.Last_Name) AS Approver_Name,
+                    b.Booking_Detail,
+                    b.Approval_Stage
+                FROM 
+                    booking b
+                LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+                LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
+                LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
+                LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
+                ORDER BY b.Booking_ID DESC";
 
                 $result = $conn->query($sql);
 
@@ -461,21 +564,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <td><?php echo htmlspecialchars($row['Booker_Name']); ?></td>
                         <td>
                             <?php echo htmlspecialchars($row['Date_Start']) . ' ' . 
-                htmlspecialchars($row['Time_Start']) . ' - ' . 
-                htmlspecialchars($row['Time_End']); ?>
+                            htmlspecialchars($row['Time_Start']) . ' - ' . 
+                            htmlspecialchars($row['Time_End']); ?>
                         </td>
                         <td><?php echo htmlspecialchars($row['Attendee_Count']); ?></td>
                         <td>
                             <?php if ((int)$row['Status_ID'] === 1): ?>
                             <span class="text-warning">รอตรวจสอบ</span>
                             <?php elseif ((int)$row['Status_ID'] === 2): ?>
-                            <span class="text-success">อนุมัติ</span>
+                            <span class="text-warning">รอดำเนินการ</span>
                             <?php elseif ((int)$row['Status_ID'] === 3): ?>
                             <span class="text-danger">ไม่อนุมัติ</span>
+                            <?php elseif ((int)$row['Status_ID'] === 4): ?>
+                            <span class="text-success">อนุมัติแล้ว</span>
                             <?php else: ?>
                             <span class="text-muted">ไม่ทราบสถานะ</span>
                             <?php endif; ?>
                         </td>
+
                         <td><?php echo htmlspecialchars($row['Approver_Name']); ?></td>
                         <td>
                             <!-- ปุ่มรายละเอียด -->
@@ -506,15 +612,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                             </div>
 
-                            <!-- แสดงปุ่มอนุมัติ/ไม่อนุมัติเฉพาะสถานะรอตรวจสอบ -->
+                            
+
                             <?php if ((int)$row['Status_ID'] === 1): ?>
-                            <!-- ปุ่มอนุมัติ -->
+                            <!-- ปุ่มอนุมัติระยะแรก -->
+                            <?php if ($_SESSION['role_id'] == 2 || $_SESSION['role_id'] == 4): ?>
                             <button type="button" class="btn btn-outline-success btn-sm ms-2" data-bs-toggle="modal"
                                 data-bs-target="#approveRejectModal<?php echo $row['Booking_ID']; ?>">
                                 <i class="fas fa-check-circle"></i>
                             </button>
+                            <?php endif; ?>
+                            <?php elseif ((int)$row['Status_ID'] === 2): ?>
+                            <!-- ปุ่มอนุมัติระยะสุดท้าย -->
+                            <?php if ($_SESSION['role_id'] == 2 || $_SESSION['role_id'] == 3): ?>
+                            <button type="button" class="btn btn-outline-success btn-sm ms-2" data-bs-toggle="modal"
+                                data-bs-target="#approveRejectModal<?php echo $row['Booking_ID']; ?>">
+                                <i class="fas fa-check-circle"></i>
+                            </button>
+                            <?php endif; ?>
+                            <?php endif; ?>
 
-                            <!-- Modal ติ๊กถูก -->
+                            <!-- Modal การอนุมัติ -->
                             <div class="modal fade" id="approveRejectModal<?php echo $row['Booking_ID']; ?>"
                                 tabindex="-1" aria-labelledby="approveRejectModalLabel<?php echo $row['Booking_ID']; ?>"
                                 aria-hidden="true">
@@ -523,8 +641,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <div class="modal-header">
                                             <h5 class="modal-title"
                                                 id="approveRejectModalLabel<?php echo $row['Booking_ID']; ?>">
-                                                การจัดการการจอง
-                                            </h5>
+                                                การจัดการการจอง</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                 aria-label="Close"></button>
                                         </div>
@@ -532,13 +649,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <p>คุณต้องการดำเนินการอย่างไรกับการจองนี้?</p>
                                         </div>
                                         <div class="modal-footer">
-                                            <!-- ปุ่มอนุมัติ -->
+                                            <!-- ปุ่มอนุมัติระยะแรก -->
+                                            <?php if ($_SESSION['role_id'] == 4 || $_SESSION['role_id'] == 2 && $row['Status_ID'] == 1): ?>
                                             <form method="POST" action="">
                                                 <input type="hidden" name="booking_id"
                                                     value="<?php echo $row['Booking_ID']; ?>">
-                                                <button type="submit" name="approve"
-                                                    class="btn btn-success">อนุมัติ</button>
+                                                <input type="hidden" name="approval_stage" value="1">
+                                                <button type="submit" name="approve" class="btn btn-success">
+                                                    <i class="fas fa-check-circle"></i> อนุมัติ
+                                                </button>
                                             </form>
+                                            <?php endif; ?>
+
+                                            <!-- ปุ่มอนุมัติระยะสุดท้าย -->
+                                            <?php if ($_SESSION['role_id'] == 3 || $_SESSION['role_id'] == 2 && $row['Status_ID'] == 2): ?>
+                                            <form method="POST" action="">
+                                                <input type="hidden" name="booking_id"
+                                                    value="<?php echo $row['Booking_ID']; ?>">
+                                                <input type="hidden" name="approval_stage" value="2">
+                                                <button type="submit" name="approve" class="btn btn-success">
+                                                    <i class="fas fa-check-circle"></i> อนุมัติ
+                                                </button>
+                                            </form>
+                                            <?php endif; ?>
 
                                             <!-- ปุ่มไม่อนุมัติ -->
                                             <form method="POST" action="">
@@ -555,10 +688,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </div>
                                 </div>
                             </div>
-                            <?php endif; ?>
+
                         </td>
                     </tr>
-
                     <?php endwhile; ?>
                     <?php else: ?>
                     <tr>
@@ -570,7 +702,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    </div>
 
     <!-- Footer -->
     <div class="footer">

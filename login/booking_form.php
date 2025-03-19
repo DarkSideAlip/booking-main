@@ -1,15 +1,7 @@
 <?php
 session_start();
-
-// ตรวจสอบสิทธิ์การเข้าถึง
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    header('Location: index.php');
-    exit;
-}
-
-// เชื่อมต่อฐานข้อมูล
 include 'db_connect.php';
-include 'auth_check.php'; 
+include 'auth_check.php';
 
 // ฟังก์ชันส่งข้อความไปยัง Telegram
 function sendTelegramMessage($chatId, $message, $botToken) {
@@ -50,25 +42,43 @@ function sendTelegramMessage($chatId, $message, $botToken) {
 }
 
 // BOT Token ของคุณ
-$telegramBotToken = "7668345720:AAGIKyTGFQGUGiMOjbax5Mv9Y30Chydnqc4";
+$telegramBotToken = "YOUR_BOT_TOKEN_HERE";
 
 // ดึงข้อมูลห้องประชุมทั้งหมดจากฐานข้อมูล
 $sql = "SELECT Hall_ID, Hall_Name, Capacity FROM HALL";
 $result = $conn->query($sql);
 
-if (!$result) {
-    die("Error in fetching halls: " . $conn->error);
-}
-
-// เก็บข้อมูลห้องประชุมในอาร์เรย์
 $halls = [];
 while ($row = $result->fetch_assoc()) {
     $halls[] = $row;
 }
 
+// รับค่า hall_id จาก URL หรือจาก session (หากมีการส่งฟอร์มแล้ว)
+$selected_hall_id = isset($_GET['hall_id']) ? $_GET['hall_id'] : (isset($_SESSION['selected_hall_id']) ? $_SESSION['selected_hall_id'] : null);
+$selected_hall_name = '';
+$selected_capacity = 0; // ความจุเริ่มต้นเป็น 0
+
+// หากมีการเลือกห้อง (จาก $_GET หรือ $_SESSION)
+if ($selected_hall_id) {
+    // ดึงชื่อห้องและความจุจากฐานข้อมูล
+    $sql = "SELECT Hall_Name, Capacity FROM HALL WHERE Hall_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $selected_hall_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $hall = $result->fetch_assoc();
+        $selected_hall_name = $hall['Hall_Name']; // จัดเก็บชื่อห้อง
+        $selected_capacity = $hall['Capacity']; // จัดเก็บความจุห้อง
+    }
+}
+
+// เมื่อผู้ใช้ส่งฟอร์ม
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $hall_id = intval($_POST['hall_id']);
-    $attendees = intval($_POST['attendees']);
+
+    $hall_id = $_POST['hall_id'];
+    $attendees = $_POST['attendees'];
     $date_start = $_POST['date_start'];
     $time_start = $_POST['time_start'];
     $time_end = $_POST['time_end'];
@@ -76,7 +86,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $booking_detail = $_POST['booking_detail'];
     $status_id = 1; // สถานะ "รอตรวจสอบ"
     $approver_id = $_SESSION['personnel_id'];
-    
+
+    // ตรวจสอบว่าห้องประชุมถูกเลือกหรือไม่
+    if (empty($hall_id)) {
+        $_SESSION['message'] = "<div class='alert alert-danger'>ห้องประชุมไม่ถูกเลือก</div>";
+        header("Location: booking_form.php");
+        exit;
+    }
 
     // ตรวจสอบความจุของห้องประชุม
     $sql = "SELECT Capacity, Hall_Name FROM HALL WHERE Hall_ID = ?";
@@ -90,18 +106,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $capacity = $hall['Capacity'];
         $hallName = $hall['Hall_Name'];  // ดึงชื่อห้องประชุม
 
+        // ตรวจสอบว่าจำนวนผู้เข้าประชุมไม่เกินความจุ
         if ($attendees > $capacity) {
-            echo "<script>alert('จำนวนผู้เข้าประชุมเกินความจุสูงสุดของห้องประชุม (ความจุ: $capacity คน)'); window.history.back();</script>";
+            $_SESSION['message'] = "<div class='alert alert-danger'>จำนวนผู้เข้าประชุมเกินความจุสูงสุดของห้องประชุม (ความจุ: $capacity คน)</div>";
+            header("Location: booking_form.php");
             exit;
         }
     } else {
-        echo "<script>alert('ไม่พบข้อมูลห้องประชุมที่เลือก'); window.history.back();</script>";
+        $_SESSION['message'] = "<div class='alert alert-danger'>ไม่พบข้อมูลห้องประชุมที่เลือก</div>";
+        header("Location: booking_form.php");
         exit;
     }
 
     // ตรวจสอบเวลาการจอง
     if (strtotime($time_start) >= strtotime($time_end)) {
-        echo "<script>alert('เวลาเริ่มต้นต้องน้อยกว่าเวลาสิ้นสุด'); window.history.back();</script>";
+        $_SESSION['message'] = "<div class='alert alert-danger'>เวลาเริ่มต้นต้องน้อยกว่าเวลาสิ้นสุด</div>";
+        header("Location: booking_form.php");
         exit;
     }
 
@@ -118,7 +138,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
-        echo "<script>alert('ไม่สามารถจองห้องประชุมในช่วงเวลาที่เลือกได้'); window.history.back();</script>";
+        $_SESSION['message'] = "<div class='alert alert-danger'>ไม่สามารถจองห้องประชุมในช่วงเวลาที่เลือกได้</div>";
+        header("Location: booking_form.php");
         exit;
     }
 
@@ -149,9 +170,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             error_log("No Telegram ID found for Personnel_ID: " . $_SESSION['personnel_id']);
         }
+
+        $_SESSION['message'] = "<div class='alert alert-success'>การจองห้องประชุมเสร็จสมบูรณ์</div>";
+        header("Location: booking.php");
+        exit;
     }
+
 }
+
 ?>
+
 
 
 <!DOCTYPE html>
@@ -339,7 +367,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </li>
                     <li class="nav-item">
                         <a href="settings.php"
-                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">ตั้งค่า</a>
+                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">สถิติ</a>
                     </li>
                     <?php elseif ($_SESSION['role_id'] == 3 || $_SESSION['role_id'] == 4): ?>
                     <li class="nav-item">
@@ -378,17 +406,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="container-custom">
             <form action="booking_form.php" method="POST">
+
+                <!-- แสดงข้อความที่นี่ -->
+                <?php
+                if (isset($_SESSION['message'])) {
+                    echo $_SESSION['message'];
+                    unset($_SESSION['message']);
+                }
+                ?>
+
+                <!-- ห้องที่เลือก (แสดงให้ดู แต่ไม่สามารถแก้ไขได้) -->
                 <div class="mb-3">
-                    <label for="hall_id" class="form-label">เลือกห้องประชุม</label>
-                    <select id="hall_id" name="hall_id" class="form-select" required onchange="updateCapacity()">
-                        <option value="" data-capacity="0">-- กรุณาเลือกห้องประชุม --</option>
-                        <?php foreach ($halls as $hall): ?>
-                        <option value="<?php echo $hall['Hall_ID']; ?>"
-                            data-capacity="<?php echo $hall['Capacity']; ?>">
-                            <?php echo htmlspecialchars($hall['Hall_Name']) . " (ความจุ: " . $hall['Capacity'] . " คน)"; ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label for="hall_id" class="form-label">ห้องประชุม</label>
+                    <input type="text" class="form-control" id="hall_id" value="<?php echo htmlspecialchars($selected_hall_name); ?>" readonly>
+                    <!-- ส่งค่า hall_id ไปยัง backend -->
+                    <input type="hidden" name="hall_id" value="<?php echo $selected_hall_id; ?>">
                 </div>
 
                 <!-- หัวข้อการจอง -->
@@ -400,8 +432,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <!-- จำนวนผู้เข้าประชุม -->
                 <div class="mb-3">
                     <label for="attendees" class="form-label">จำนวนผู้เข้าประชุม</label>
-                    <input type="number" id="attendees" name="attendees" class="form-control" required min="1">
-                    <small id="capacity-info" class="text-muted">ความจุสูงสุด: - คน</small>
+                    <input type="number" id="attendees" name="attendees" class="form-control" required min="1" max="<?php echo $selected_capacity; ?>">
+                    <small class="text-muted">ความจุสูงสุด: <?php echo $selected_capacity; ?> คน</small>
                 </div>
 
                 <!-- วันที่เริ่มต้น -->
@@ -424,7 +456,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- คำอธิบายการจอง -->
                 <div class="mb-3">
-                    <label for="booking_detail" class="form-label">คำอธิบาย</label>
+                    <label for="booking_detail" class="form-label">รูปแบบการจัดและอุปกรณ์ที่ใช้</label>
                     <textarea id="booking_detail" name="booking_detail" class="form-control" rows="3"
                         required></textarea>
                 </div>
@@ -457,19 +489,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     let currentDate = `${yyyy}-${mm}-${dd}`;
     document.getElementById("date_start").value = currentDate;
 
-    function updateCapacity() {
-        const hallSelect = document.getElementById("hall_id");
-        const attendeesInput = document.getElementById("attendees");
-        const capacityInfo = document.getElementById("capacity-info");
-
-        // ดึงความจุจาก data-capacity
-        const selectedOption = hallSelect.options[hallSelect.selectedIndex];
-        const capacity = selectedOption.getAttribute("data-capacity");
-
-        // อัปเดตข้อมูลความจุในฟอร์ม
-        attendeesInput.max = capacity || 0; // กำหนดค่า max
-        capacityInfo.textContent = `ความจุสูงสุด: ${capacity || "-"} คน`;
-    }
+    
     </script>
 
 

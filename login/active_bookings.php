@@ -28,7 +28,7 @@ $sql = "SELECT
         LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
         LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
         LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
-        WHERE b.Status_ID = 2
+        WHERE b.Status_ID = 4
         ORDER BY b.Booking_ID DESC";
 
 $result = $conn->query($sql);
@@ -258,7 +258,7 @@ $result = $conn->query($sql);
                     </li>
                     <li class="nav-item">
                         <a href="settings.php"
-                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">ตั้งค่า</a>
+                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">สถิติ</a>
                     </li>
                     <?php elseif ($_SESSION['role_id'] == 3 || $_SESSION['role_id'] == 4): ?>
                     <li class="nav-item">
@@ -327,7 +327,7 @@ $result = $conn->query($sql);
                                     <td>
                                         <?php if ($row['Status_Name'] == 'รอตรวจสอบ'): ?>
                                         <span class="text-warning">รอตรวจสอบ</span>
-                                        <?php elseif ($row['Status_Name'] == 'อนุมัติ'): ?>
+                                        <?php elseif ($row['Status_Name'] == 'อนุมัติระยะที่สอง'): ?>
                                         <span class="text-success">อนุมัติ</span>
                                         <?php elseif ($row['Status_Name'] == 'ไม่อนุมัติ'): ?>
                                         <span class="text-danger">ไม่อนุมัติ</span>

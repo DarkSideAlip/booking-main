@@ -13,7 +13,7 @@ function getRandomColor() {
     return $colors[array_rand($colors)];
 }
 
-// คำสั่ง SQL ดึงข้อมูลเฉพาะที่ `Status_ID = 1`
+// คำสั่ง SQL ดึงข้อมูลเฉพาะที่อนุมัติแล้ว (Status_ID = 4)
 $sql = "SELECT 
             b.Date_Start, 
             b.Time_Start, 
@@ -24,7 +24,7 @@ $sql = "SELECT
             b.Topic_Name 
         FROM booking b
         LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
-        WHERE b.Status_ID = 2";  // เฉพาะที่อนุมัติแล้ว (Status_ID = 2)
+        WHERE b.Status_ID = 4";
 
 $result = $conn->query($sql);
 
@@ -35,7 +35,7 @@ if ($result->num_rows > 0) {
         $bookings[] = [
             "date" => $row["Date_Start"],
             "details" => "{$row['Topic_Name']} - {$row['Booking_Detail']} ({$row['Attendee_Count']} คน)",
-            "color" => "dot-green" // สีสามารถกำหนดตามเงื่อนไขเพิ่มเติม
+            "color" => getRandomColor() // ใช้ฟังก์ชันสุ่มสี
         ];
     }
 }

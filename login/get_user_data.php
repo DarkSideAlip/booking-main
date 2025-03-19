@@ -1,5 +1,5 @@
 <?php
-include 'db_connect.php';
+include 'db_connect.php'; // ตรวจสอบการเชื่อมต่อฐานข้อมูล
 
 if (isset($_GET['id'])) {
     $personnel_id = $_GET['id'];
@@ -12,18 +12,18 @@ if (isset($_GET['id'])) {
         $stmt->execute();
         $result = $stmt->get_result();
 
-        // ตรวจสอบว่าเราได้ผลลัพธ์หรือไม่
         if ($result->num_rows > 0) {
             $userData = $result->fetch_assoc();
-            echo json_encode($userData); // ส่งกลับข้อมูลในรูปแบบ JSON
+            echo json_encode($userData); // ส่งข้อมูลในรูปแบบ JSON
         } else {
-            echo json_encode(['message' => 'ไม่พบข้อมูลผู้ใช้']); // ถ้าไม่พบข้อมูล
+            // ส่งข้อความแจ้งว่าไม่พบข้อมูล
+            echo json_encode(['message' => 'ไม่พบข้อมูลผู้ใช้']);
         }
     } else {
-        echo json_encode(['message' => 'ไม่พบข้อมูลผู้ใช้']); // ถ้า ID ไม่ใช่ตัวเลข
+        echo json_encode(['message' => 'ID ผู้ใช้ไม่ถูกต้อง']); // ถ้า ID ไม่เป็นตัวเลข
     }
 } else {
-    echo json_encode(['message' => 'ไม่พบข้อมูลผู้ใช้']); // ถ้าไม่มีการส่ง ID มา
+    echo json_encode(['message' => 'ไม่พบข้อมูลผู้ใช้']); // ถ้าไม่ได้ส่ง ID มา
 }
 
 $conn->close();

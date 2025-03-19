@@ -1,39 +1,27 @@
 <?php
 session_start();
 
+// ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header('Location: index.php');
+    exit;
+}
+
 // หากล็อกอินแล้ว จะแสดงข้อมูลสมาชิกได้
 include 'db_connect.php';
 include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
 
-// ถ้าเป็นการเพิ่มข้อมูลใหม่
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($_POST['personnel_id'])) {
-    // ดึงข้อมูลจากฟอร์ม
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-    $first_name = $_POST['first_name'];
-    $last_name = $_POST['last_name'];
-    $position_id = $_POST['position_id'];
-    $subject_group_id = $_POST['subject_group_id'];
-    $phone = $_POST['phone'];
-    $email = $_POST['email'];
-    $role_id = $_POST['role_id'];
-    $telegram_id = $_POST['telegram_id'];
+// ดึงข้อมูลของผู้ใช้ที่ล็อกอินจากตาราง personnel
+$personnel_id = $_SESSION['personnel_id'];
+$sql = "SELECT First_Name, Last_Name, Email, Phone, Telegram_ID, Position_ID, Subject_Group_ID, Role_ID FROM personnel WHERE Personnel_ID = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param('i', $personnel_id);
+$stmt->execute();
+$stmt->bind_result($first_name, $last_name, $email, $phone, $telegram_id, $position_id, $subject_group_id, $role_id);
+$stmt->fetch();
+$stmt->close();
 
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
-    // เพิ่มข้อมูลใหม่
-    $sql = "INSERT INTO personnel (Username, Password, First_Name, Last_Name, Position_ID, Subject_Group_ID, Phone, Email, Role_ID, Telegram_ID) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssssiissis", $username, $hashed_password, $first_name, $last_name, $position_id, $subject_group_id, $phone, $email, $role_id, $telegram_id);
-
-    if ($stmt->execute()) {
-        $_SESSION['message'] = "<div class='alert alert-success'>ลงทะเบียนสำเร็จ!</div>";
-    } else {
-        $_SESSION['message'] = "<div class='alert alert-danger'>เกิดข้อผิดพลาด: " . $stmt->error . "</div>";
-    }
-}
-
+// ดึงข้อมูลสมาชิกที่ต้องการแก้ไข
 if (isset($_GET['id'])) {
     $personnel_id = $_GET['id'];
     $sql = "SELECT * FROM personnel WHERE personnel_id = ?";
@@ -42,14 +30,9 @@ if (isset($_GET['id'])) {
     $stmt->execute();
     $result = $stmt->get_result();
     $userData = $result->fetch_assoc();
-    echo json_encode($userData);
 }
 
-
-
 ?>
-
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -225,7 +208,6 @@ if (isset($_GET['id'])) {
     }
 
     .add-user {
-        width: 140px; 
         display: flex;
         justify-content: center;
         align-items: center;
@@ -287,7 +269,7 @@ if (isset($_GET['id'])) {
                     </li>
                     <li class="nav-item">
                         <a href="settings.php"
-                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">ตั้งค่า</a>
+                            class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'settings.php') ? 'active' : ''; ?>">สถิติ</a>
                     </li>
                     <?php elseif ($_SESSION['role_id'] == 3 || $_SESSION['role_id'] == 4): ?>
                     <li class="nav-item">
@@ -327,7 +309,6 @@ if (isset($_GET['id'])) {
             <div style="font-size: 20px; width: 100%; text-align: left;">รายการสมาชิก</div>
             <div class="button-container">
                 <button class="add-user btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                    <i class="fa-solid fa-user-plus" style="margin-right: 5px;"></i>
                     <div style="font-size: 15px;">เพิ่มผู้ใช้งาน</div>
                 </button>
             </div>
@@ -355,7 +336,7 @@ if (isset($_GET['id'])) {
                 <tbody>
                     <?php
                     // ดึงข้อมูลสมาชิกจากฐานข้อมูล
-                    $sql = "SELECT personnel_id, first_name, last_name, username, position_id, role_id FROM personnel";
+                    $sql = "SELECT personnel_id, first_name, last_name, username, position_id, role_id, subject_group_id, phone, email, telegram_id, password FROM personnel";
                     $result = $conn->query($sql);
 
                     if ($result->num_rows > 0) {
@@ -400,10 +381,24 @@ if (isset($_GET['id'])) {
                             echo "<td>" . $role_id . "</td>";
                             // เพิ่มลิงก์แก้ไขในตาราง
                             echo "<td>
-                                <a href='#' class='btn btn-outline-warning btn-sm' data-bs-toggle='modal' data-bs-target='#editUserModal' onclick='editUser(" . $row['personnel_id'] . ")'>แก้ไข</a>
+                                <button type='button' class='btn btn-outline-warning btn-sm editBtn' 
+                                      data-bs-toggle='modal' 
+                                      data-bs-target='#editUserModal'
+                                      data-id='" . $row['personnel_id'] . "'
+                                      data-first_name='" . $row['first_name'] . "'
+                                      data-last_name='" . $row['last_name'] . "'
+                                      data-username='" . $row['username'] . "'
+                                      data-position='" . $row['position_id'] . "'
+                                      data-phone='" . $row['phone'] . "'
+                                      data-subject_group='" . $row['subject_group_id'] . "'
+                                      data-role='" . $row['role_id'] . "'
+                                      data-telegram='" . $row['telegram_id'] . "'
+                                      data-email='" . $row['email'] . "'>
+                                      
+                                      <i class='fas fa-edit'></i> แก้ไข
+                                </button>
                                 <a href='delete_member.php?id=" . $row['personnel_id'] . "' class='btn btn-outline-danger btn-sm' onclick='return confirm(\"คุณแน่ใจว่าต้องการลบผู้ใช้งานนี้?\")'>ลบ</a>
                             </td>";
-
 
                             echo "</tr>";
                         }            
@@ -428,8 +423,7 @@ if (isset($_GET['id'])) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- แบบฟอร์มกรอกข้อมูลผู้ใช้งาน -->
-                    <form action="members.php" method="post">
+                    <form action="add_user.php" method="post">
                         <div class="mb-3">
                             <label for="first_name" class="form-label">ชื่อ</label>
                             <input type="text" class="form-control" id="first_name" name="first_name" required>
@@ -439,7 +433,7 @@ if (isset($_GET['id'])) {
                             <input type="text" class="form-control" id="last_name" name="last_name" required>
                         </div>
                         <div class="mb-3">
-                            <label for="username" class="form-label">ชื่อผู้ใช้</label>
+                            <label for="username" class="form-label">ชื่อผู้ใช้ (ห้ามซ้ำ)</label>
                             <input type="text" class="form-control" id="username" name="username" required>
                         </div>
                         <div class="mb-3">
@@ -458,33 +452,29 @@ if (isset($_GET['id'])) {
                         <div class="mb-3">
                             <label for="subject_group_id" class="form-label">กลุ่มสาระการเรียนรู้</label>
                             <select name="subject_group_id" id="subject_group_id" class="form-select" required>
-                                 <option value="1">กลุ่มสาระการเรียนรู้ภาษาไทย</option>
-                                 <option value="2">กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม</option>
-                                 <option value="3">กลุ่มสาระการเรียนรู้คณิตศาสตร์</option>
-                                 <option value="4">กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี</option>
-                                 <option value="5">กลุ่มสาระการเรียนรู้ภาษาต่างประเทศ</option>
-                                 <option value="6">กลุ่มสาระการงานอาชีพและเทคโนโลยี</option>
-                                 <option value="7">กลุ่มสาระศิลปะ ดนตรี นาฏศิลป์</option>
-                                 <option value="8">กลุ่มสาระสุขศึกษา พลศึกษา</option>
-                                 <option value="9">แนะแนวและห้องสมุด</option>
+                                <option value="1">กลุ่มสาระการเรียนรู้ภาษาไทย</option>
+                                <option value="2">กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม</option>
+                                <option value="3">กลุ่มสาระการเรียนรู้คณิตศาสตร์</option>
+                                <option value="4">กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี</option>
+                                <option value="5">กลุ่มสาระการเรียนรู้ภาษาต่างประเทศ</option>
+                                <option value="6">กลุ่มสาระการงานอาชีพและเทคโนโลยี</option>
+                                <option value="7">กลุ่มสาระศิลปะ ดนตรี นาฏศิลป์</option>
+                                <option value="8">กลุ่มสาระสุขศึกษา พลศึกษา</option>
+                                <option value="9">แนะแนวและห้องสมุด</option>
                             </select>
                         </div>
-
                         <div class="mb-3">
-                            <label for="phone" class="form-label">เบอร์โทรศัพท์</label>
+                            <label for="phone" class="form-label">เบอร์โทรศัพท์ (ห้ามซ้ำ)</label>
                             <input type="text" name="phone" id="phone" class="form-control" required>
                         </div>
-
                         <div class="mb-3">
-                            <label for="email" class="form-label">อีเมล</label>
+                            <label for="email" class="form-label">G-mail (ห้ามซ้ำ)</label>
                             <input type="email" name="email" class="form-control" id="email" required>
                         </div>
-
                         <div class="mb-3">
-                            <label for="telegram_id" class="form-label">ไอดีเทเลแกรม</label>
+                            <label for="telegram_id" class="form-label">ID Telegram (ห้ามซ้ำ)</label>
                             <input type="text" name="telegram_id" class="form-control" id="telegram_id" required>
                         </div>
-
                         <div class="mb-3">
                             <label for="position_id" class="form-label">บทบาท</label>
                             <select name="position_id" class="form-select" id="position_id" required>
@@ -492,8 +482,7 @@ if (isset($_GET['id'])) {
                                 <option value="2">ครู</option>
                                 <option value="3">บุคลากรทางการศึกษา</option>
                             </select>
-                        </div>     
-
+                        </div>
                         <button type="submit" class="btn btn-primary">บันทึก</button>
                     </form>
                 </div>
@@ -514,23 +503,27 @@ if (isset($_GET['id'])) {
                     <form action="edit_user.php" method="post">
                         <input type="hidden" name="personnel_id" id="edit_personnel_id">
                         <div class="mb-3">
-                            <label for="edit_first_name" class="form-label">ชื่อ</label>
+                            <label for="first_name" class="form-label">ชื่อ</label>
                             <input type="text" class="form-control" id="edit_first_name" name="first_name" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_last_name" class="form-label">นามสกุล</label>
+                            <label for="last_name" class="form-label">นามสกุล</label>
                             <input type="text" class="form-control" id="edit_last_name" name="last_name" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_username" class="form-label">ชื่อผู้ใช้</label>
+                            <label for="username" class="form-label">ชื่อผู้ใช้ (ห้ามซ้ำ)</label>
                             <input type="text" class="form-control" id="edit_username" name="username" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_password" class="form-label">รหัสผ่าน</label>
-                            <input type="password" class="form-control" id="edit_password" name="password" required>
+                            <label for="password" class="form-label">รหัสผ่านเดิม</label>
+                            <input type="password" class="form-control" id="edit_password" name="password">
                         </div>
                         <div class="mb-3">
-                            <label for="edit_role_id" class="form-label">สถานะ</label>
+                            <label for="password" class="form-label">รหัสผ่านใหม่</label>
+                            <input type="password" class="form-control" id="new_password" name="password">
+                        </div>
+                        <div class="mb-3">
+                            <label for="role_id" class="form-label">สถานะ</label>
                             <select class="form-select" id="edit_role_id" name="role_id" required>
                                 <option value="1">ผู้ใช้</option>
                                 <option value="2">Admin</option>
@@ -539,7 +532,7 @@ if (isset($_GET['id'])) {
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_subject_group_id" class="form-label">กลุ่มสาระการเรียนรู้</label>
+                            <label for="subject_group_id" class="form-label">กลุ่มสาระการเรียนรู้</label>
                             <select name="subject_group_id" id="edit_subject_group_id" class="form-select" required>
                                 <option value="1">กลุ่มสาระการเรียนรู้ภาษาไทย</option>
                                 <option value="2">กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม</option>
@@ -552,31 +545,26 @@ if (isset($_GET['id'])) {
                                 <option value="9">แนะแนวและห้องสมุด</option>
                             </select>
                         </div>
-
                         <div class="mb-3">
-                            <label for="edit_phone" class="form-label">เบอร์โทรศัพท์</label>
+                            <label for="phone" class="form-label">เบอร์โทรศัพท์ (ห้ามซ้ำ)</label>
                             <input type="text" name="phone" id="edit_phone" class="form-control" required>
                         </div>
-
                         <div class="mb-3">
-                            <label for="edit_email" class="form-label">อีเมล</label>
+                            <label for="email" class="form-label">G-mail (ห้ามซ้ำ)</label>
                             <input type="email" name="email" class="form-control" id="edit_email" required>
                         </div>
-
                         <div class="mb-3">
-                            <label for="edit_telegram_id" class="form-label">ไอดีเทเลแกรม</label>
+                            <label for="telegram_id" class="form-label">ID Telegram (ห้ามซ้ำ)</label>
                             <input type="text" name="telegram_id" class="form-control" id="edit_telegram_id" required>
                         </div>
-
                         <div class="mb-3">
-                            <label for="edit_position_id" class="form-label">บทบาท</label>
+                            <label for="position_id" class="form-label">บทบาท</label>
                             <select name="position_id" class="form-select" id="edit_position_id" required>
                                 <option value="1">ผู้บริหาร</option>
                                 <option value="2">ครู</option>
                                 <option value="3">บุคลากรทางการศึกษา</option>
                             </select>
                         </div>
-
                         <button type="submit" class="btn btn-primary">บันทึกการแก้ไข</button>
                     </form>
                 </div>
@@ -603,53 +591,32 @@ if (isset($_GET['id'])) {
         $('#member-table').dataTable();
     });
 
+    // เมื่อคลิกปุ่มแก้ไข ให้ดึงข้อมูลจาก data attributes ไปใส่ใน modal แก้ไข
+    $('.editBtn').on('click', function(){
+              var id = $(this).data('id');
+              var firstName = $(this).data('first_name');
+              var lastName = $(this).data('last_name');
+              var username = $(this).data('username');
+              var position = $(this).data('position');
+              var subjectGroup = $(this).data('subject_group');
+              var role = $(this).data('role');
+              var telegramId = $(this).data('telegram');
+              var email = $(this).data('email');  // ดึงข้อมูลอีเมล
+              var phone = $(this).data('phone');
 
-    </script>
+              $('#edit_personnel_id').val(id);
+              $('#edit_first_name').val(firstName);
+              $('#edit_last_name').val(lastName);
+              $('#edit_username').val(username);
+              $('#edit_position_id').val(position);
+              $('#edit_subject_group_id').val(subjectGroup);
+              $('#edit_role_id').val(role);
+              $('#edit_telegram_id').val(telegramId);
+              $('#edit_email').val(email); // แสดงค่าอีเมลในฟิลด์
+              $('#edit_phone').val(phone);
+          });
 
-    <script>
-        function editUser(personnel_id) {
-            // ส่งคำขอ AJAX เพื่อดึงข้อมูลผู้ใช้งานจากฐานข้อมูล
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "get_user_data.php?id=" + personnel_id, true);
-            xhr.onload = function() {
-                if (xhr.status == 200) {
-                    try {
-                        // ถ้าคำขอสำเร็จและได้รับข้อมูลที่ถูกต้องจากฐานข้อมูล
-                        var userData = JSON.parse(xhr.responseText);
 
-                        // ตรวจสอบว่ามีข้อมูลหรือไม่
-                        if (userData && userData.first_name) {
-                            // เติมข้อมูลที่ดึงมาจากฐานข้อมูลลงในฟอร์มใน Modal
-
-                            document.getElementById('edit_personnel_id').value = userData.personnel_id || ''; 
-                            document.getElementById('edit_first_name').value = userData.first_name || 'ไม่มีข้อมูล';
-                            document.getElementById('edit_last_name').value = userData.last_name || 'ไม่มีข้อมูล';
-                            document.getElementById('edit_username').value = userData.username || 'ไม่มีข้อมูล';
-                            document.getElementById('edit_phone').value = userData.phone || 'ไม่มีข้อมูล';
-                            document.getElementById('edit_email').value = userData.email || 'ไม่มีข้อมูล';
-                            document.getElementById('edit_telegram_id').value = userData.telegram_id || 'ไม่มีข้อมูล';
-
-                            // ปรับค่าอื่นๆ ตามข้อมูลที่ได้จากฐานข้อมูล
-                            document.getElementById('edit_role_id').value = userData.role_id || '';
-                            document.getElementById('edit_position_id').value = userData.position_id || '';
-                            document.getElementById('edit_subject_group_id').value = userData.subject_group_id || '';
-
-                            // เปิด Modal
-                            var myModal = new bootstrap.Modal(document.getElementById('editUserModal'), {});
-                            myModal.show();
-                        } else {
-                            console.error('ไม่พบข้อมูลผู้ใช้');
-                            alert('ไม่พบข้อมูลผู้ใช้');
-                        }
-                    } catch (error) {
-                        console.error('Error parsing JSON response: ', error);
-                    }
-                } else {
-                    console.error('Error loading user data: ', xhr.statusText);
-                }
-            };
-            xhr.send();
-        }
     </script>
     
 
