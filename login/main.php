@@ -565,7 +565,9 @@ $conn->close();
                     </div>
                     <div style="position: absolute; right: 0; padding: 15px;">
                         <div style="color: #ffffff;">รายการจองของฉัน</div>
-                        <div style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);"><?php echo $rooms_pending; ?></div>
+                        <div
+                            style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);">
+                            <?php echo $rooms_pending; ?></div>
                     </div>
                 </div>
                 <hr>
@@ -578,7 +580,9 @@ $conn->close();
                     </div>
                     <div style="position: absolute; right: 0; padding: 15px;">
                         <div style="color: #ffffff;">รายการจองของฉัน</div>
-                        <div style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);"><?php echo $rooms_approved; ?></div>
+                        <div
+                            style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);">
+                            <?php echo $rooms_approved; ?></div>
                     </div>
                 </div>
                 <hr>
@@ -591,7 +595,9 @@ $conn->close();
                     </div>
                     <div style="position: absolute; right: 0; padding: 15px;">
                         <div style="color: #ffffff;">รายการจองของฉัน</div>
-                        <div style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);"><?php echo $rooms_rejected; ?></div>
+                        <div
+                            style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);">
+                            <?php echo $rooms_rejected; ?></div>
                     </div>
                 </div>
                 <hr>
@@ -605,7 +611,9 @@ $conn->close();
                     </div>
                     <div style="position: absolute; right: 0; padding: 15px;">
                         <div style="color: #ffffff;">สามารถอนุมัติได้</div>
-                        <div style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);"><?php echo $rooms_pending; ?></div>
+                        <div
+                            style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);">
+                            <?php echo $rooms_pending; ?></div>
                     </div>
                 </div>
                 <hr>
@@ -618,7 +626,9 @@ $conn->close();
                     </div>
                     <div style="position: absolute; right: 0; padding: 15px;">
                         <div style="color: #ffffff;">ห้อง</div>
-                        <div style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);"><?php echo $total_rooms; ?></div>
+                        <div
+                            style="display: flex; justify-content: flex-end; padding-top: 10px; font-size: 20px; color: rgb(136, 135, 135);">
+                            <?php echo $total_rooms; ?></div>
                     </div>
                 </div>
                 <hr>
@@ -633,7 +643,8 @@ $conn->close();
             <div class="calendar-header">
                 <h2 id="month-year"></h2>
                 <div class="navigation">
-                    <button id="prev-month" class="btn btn-outline-secondary"><</button>
+                    <button id="prev-month" class="btn btn-outline-secondary">
+                        << /button>
                             <button id="next-month" class="btn btn-outline-secondary">></button>
                 </div>
             </div>
@@ -656,10 +667,6 @@ $conn->close();
         </div>
     </div>
 
-    <div class="footer">
-        Copyright 2025 © - BangWa Developer
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -669,26 +676,27 @@ $conn->close();
         alertModal.show();
     };
 
+    // ชื่อเดือนภาษาไทย
     const monthNames = [
         "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
         "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
     ];
 
-    let bookings = [];
-    let currentDate = new Date();
+    let bookings = []; // เก็บข้อมูลการจองทั้งหมด
+    let currentDate = new Date(); // เก็บเดือน-ปีปัจจุบัน
 
-    // ดึงข้อมูลจากฐานข้อมูลผ่าน PHP
+    // ฟังก์ชันดึงข้อมูลการจองจากไฟล์ get_booking.php
     async function fetchBookings() {
         try {
-            const response = await fetch("get_booking.php"); // เรียกไฟล์ PHP
-            bookings = await response.json();
-            renderCalendar(currentDate);
+            const response = await fetch("get_booking.php");
+            bookings = await response.json(); // แปลงข้อมูลเป็น JSON
+            renderCalendar(currentDate); // สร้างปฏิทิน
         } catch (error) {
             console.error("Error fetching bookings:", error);
         }
     }
 
-
+    // ฟังก์ชันสร้างปฏิทิน
     function renderCalendar(date) {
         const month = date.getMonth();
         const year = date.getFullYear();
@@ -706,11 +714,13 @@ $conn->close();
         let row = document.createElement('tr');
         const today = new Date();
 
+        // สร้างช่องว่างก่อนวันแรกของเดือน (ถ้าวันที่ 1 ไม่ตรงกับวันอาทิตย์)
         for (let i = 0; i < startDay; i++) {
             const cell = document.createElement('td');
             row.appendChild(cell);
         }
 
+        // สร้างเซลล์แต่ละวันในเดือน
         for (let day = 1; day <= totalDays; day++) {
             if (row.children.length === 7) {
                 calendarBody.appendChild(row);
@@ -720,32 +730,32 @@ $conn->close();
             const cell = document.createElement('td');
             const fullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
+            // แสดงเลขวันที่
             cell.innerHTML = `<span class="day-number">${day}</span>`;
 
-            // ตรวจสอบว่ามีการจองในวันนี้หรือไม่
+            // กรองข้อมูลการจองของวันที่นี้
             const bookingForDate = bookings.filter(booking => booking.date === fullDate);
 
-            // คลิกได้ทุกวัน (มีหรือไม่มีการจอง)
+            // เพิ่ม Event ให้คลิกได้ทุกวัน (มีหรือไม่มีการจอง)
             cell.addEventListener('click', () => showBookingDetails(bookingForDate, fullDate));
 
+            // ถ้ามีการจอง ให้ใส่จุดสี
             if (bookingForDate.length > 0) {
                 cell.classList.add('has-booking');
 
-                // สร้างจุดสีของกิจกรรมแบบสุ่มจำนวน (1-3 จุดต่อวัน)
+                // สร้าง container สำหรับจุดสี
                 const dotsContainer = document.createElement('div');
                 dotsContainer.classList.add('booking-dots');
 
-                let numDots = Math.min(bookingForDate.length, Math.floor(Math.random() * 3) + 1); // 1 ถึง 3 จุดสุ่ม
-
+                // จำกัดจุดสีที่แสดง 1-3 จุด (สุ่ม)
+                let numDots = Math.min(bookingForDate.length, Math.floor(Math.random() * 3) + 1);
                 for (let i = 0; i < numDots; i++) {
                     const dot = document.createElement('div');
                     dot.classList.add('booking-dot', bookingForDate[i].color);
                     dotsContainer.appendChild(dot);
                 }
-
                 cell.appendChild(dotsContainer);
             }
-
 
             // ไฮไลต์วันที่ปัจจุบัน
             if (
@@ -764,25 +774,54 @@ $conn->close();
         }
     }
 
-    /* ฟังก์ชันแสดงรายละเอียดการจอง */
-    function showBookingDetails(bookings, date) {
+    // ฟังก์ชันแสดงรายละเอียดการจองใน Modal
+    // โดยแสดงแต่ละการจองในตารางแยกกัน
+    function showBookingDetails(bookingsForDate, date) {
         const modalBody = document.getElementById('bookingModalBody');
         const modalTitle = document.getElementById('bookingModalLabel');
 
-        if (bookings.length > 0) {
-            // แสดงรายการจองปกติ
+        if (bookingsForDate.length > 0) {
             modalTitle.textContent = `รายละเอียดการจอง (${date})`;
-            modalBody.innerHTML = bookings.map(booking => `
-            <div class="booking-item">
-                <span class="booking-dot ${booking.color}"></span>
-                <p>${booking.details}</p>
-            </div>
-        `).join('');
+
+            // สร้าง HTML สำหรับตารางแยกแต่ละการจอง
+            let tablesHtml = bookingsForDate.map((booking, index) => {
+                return `
+                <table class="table table-striped table-bordered" style="margin-bottom: 20px; table-layout: auto; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th colspan="2" style="text-align: center;">การจอง ${index + 1}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th style="text-align: left; vertical-align: top;">ผู้จอง</th>
+                            <td style="text-align: left; vertical-align: top;">${booking.booker_name || 'ไม่ระบุ'}</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; vertical-align: top;">เบอร์ผู้จอง</th>
+                            <td style="text-align: left; vertical-align: top;">${booking.booker_phone || '-'}</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; vertical-align: top;">ชื่อห้อง</th>
+                            <td style="text-align: left; vertical-align: top;">${booking.room_name || 'ไม่ระบุ'}</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; vertical-align: top;">ช่วงเวลาที่จอง</th>
+                            <td style="text-align: left; vertical-align: top;">${booking.booking_time || '-'}</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; vertical-align: top;">รายละเอียด</th>
+                            <td style="text-align: left; vertical-align: top;">${booking.details || '-'}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+            }).join('');
+
+            modalBody.innerHTML = tablesHtml;
         } else {
-            // หากไม่มีรายการจอง
             modalTitle.textContent = `ไม่มีรายการจอง (${date})`;
-            modalBody.innerHTML =
-                `<p style="text-align: center; color: red;">ไม่มีการจองในวันนี้ :)</p>`;
+            modalBody.innerHTML = `<p style="text-align: center; color: red;">ไม่มีการจองในวันนี้ :)</p>`;
         }
 
         // เปิด Modal
@@ -790,20 +829,26 @@ $conn->close();
         bookingModal.show();
     }
 
-    /* ปุ่มเปลี่ยนเดือน */
+    // ปุ่มเปลี่ยนเดือน (ก่อนหน้า)
     document.getElementById('prev-month').addEventListener('click', () => {
         currentDate.setMonth(currentDate.getMonth() - 1);
         renderCalendar(currentDate);
     });
 
+    // ปุ่มเปลี่ยนเดือน (ถัดไป)
     document.getElementById('next-month').addEventListener('click', () => {
         currentDate.setMonth(currentDate.getMonth() + 1);
         renderCalendar(currentDate);
     });
 
-    /* ดึงข้อมูลจากฐานข้อมูลและแสดงปฏิทิน */
+    // ดึงข้อมูลจากฐานข้อมูลครั้งแรก เมื่อโหลดหน้าเสร็จ
     fetchBookings();
     </script>
+
+
+
+
+
 
 
 

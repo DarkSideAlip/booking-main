@@ -3,7 +3,7 @@ session_start();
 include 'db_connect.php'; // เชื่อมต่อกับฐานข้อมูล
 
 // ดึงข้อมูลจากตาราง hall
-$sql = "SELECT Hall_ID, Hall_Name, Hall_Detail, Hall_Size, Capacity, Status_ID FROM hall";
+$sql = "SELECT Hall_ID, Hall_Name, Hall_Detail, Hall_Size, Capacity, Status_Hall FROM hall";
 $stmt = $conn->prepare($sql);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $hall_detail = $_POST['hall_detail'];
     $hall_size = $_POST['hall_size'];
     $capacity = $_POST['capacity'];
-    $status_id = $_POST['status_id']; // ดึงข้อมูลสถานะห้อง
+    $status_id = $_POST['status_hall']; // ดึงข้อมูลสถานะห้อง
 
     // ตรวจสอบห้องที่มีชื่อซ้ำ
     $sql_check = "SELECT * FROM hall WHERE Hall_Name = ?";
@@ -27,10 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $_SESSION['message'] = "<div class='alert alert-danger'>ห้องนี้มีอยู่แล้วในระบบ!</div>";
     } else {
         // เพิ่มห้องใหม่
-        $sql = "INSERT INTO hall (Hall_Name, Hall_Detail, Hall_Size, Capacity, Status_ID) 
+        $sql = "INSERT INTO hall (Hall_Name, Hall_Detail, Hall_Size, Capacity, Status_Hall) 
                 VALUES (?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssssi", $hall_name, $hall_detail, $hall_size, $capacity, $status_id);
+        $stmt->bind_param("ssssi", $hall_name, $hall_detail, $hall_size, $capacity, $status_hall);
 
         if ($stmt->execute()) {
             $_SESSION['message'] = "<div class='alert alert-success'>ห้องถูกเพิ่มสำเร็จ!</div>";

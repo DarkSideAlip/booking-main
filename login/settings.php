@@ -544,7 +544,8 @@ $result = $conn->query($sql);
                                 </tr>";
                         }
                     } else {
-                        echo "<tr><td colspan='7' class='text-center'>ไม่พบข้อมูลการจองห้องประชุม</td></tr>";
+                        // ซ่อนตารางโดยใช้ CSS
+                        echo "<script>document.getElementById('member-table').style.display = 'none';</script>";
                     }
                     ?>
                     </tbody>
@@ -552,13 +553,6 @@ $result = $conn->query($sql);
             </div>
 
         </div>
-    </div>
-
-
-
-    <!-- Footer -->
-    <div class="footer">
-        Copyright 2025 © - BangWa Developer
     </div>
 
     <script src="js/bootstrap.bundle.min.js"></script>

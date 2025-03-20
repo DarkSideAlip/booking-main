@@ -465,15 +465,15 @@ if (isset($_GET['id'])) {
                         </div>
                         <div class="mb-3">
                             <label for="phone" class="form-label">เบอร์โทรศัพท์ (ห้ามซ้ำ)</label>
-                            <input type="text" name="phone" id="phone" class="form-control" required>
+                            <input type="text" name="phone" id="phone" class="form-control">
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">G-mail (ห้ามซ้ำ)</label>
-                            <input type="email" name="email" class="form-control" id="email" required>
+                            <input type="email" name="email" class="form-control" id="email">
                         </div>
                         <div class="mb-3">
                             <label for="telegram_id" class="form-label">ID Telegram (ห้ามซ้ำ)</label>
-                            <input type="text" name="telegram_id" class="form-control" id="telegram_id" required>
+                            <input type="text" name="telegram_id" class="form-control" id="telegram_id">
                         </div>
                         <div class="mb-3">
                             <label for="position_id" class="form-label">บทบาท</label>
@@ -516,11 +516,11 @@ if (isset($_GET['id'])) {
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label">รหัสผ่านเดิม</label>
-                            <input type="password" class="form-control" id="edit_password" name="password">
+                            <input type="password" class="form-control" id="edit_password" name="password" required>
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label">รหัสผ่านใหม่</label>
-                            <input type="password" class="form-control" id="new_password" name="password">
+                            <input type="password" class="form-control" id="new_password" name="password" required>
                         </div>
                         <div class="mb-3">
                             <label for="role_id" class="form-label">สถานะ</label>
@@ -574,15 +574,9 @@ if (isset($_GET['id'])) {
 
 
 
-    <!-- Footer -->
-    <div class="footer">
-        Copyright 2025 © - BangWa Developer
-    </div>
-
     <!-- JavaScript -->
     <script src="js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/2.1.7/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.1.7/js/dataTables.bootstrap5.js"></script>
 

@@ -7,18 +7,18 @@ include 'db_connect.php';
 
 // ตรวจสอบว่ามีการส่ง ID มาหรือไม่
 if (isset($_GET['id'])) {
-    $Hall_ID = $_GET['id'];
+    $Booking_ID = $_GET['id'];
 
     // คำสั่ง SQL สำหรับการลบข้อมูล
-    $sql = "DELETE FROM hall WHERE hall_id = ?";
+    $sql = "DELETE FROM booking WHERE Booking_ID = ?";
     
     // เตรียมคำสั่ง SQL
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $Hall_ID);  // ใช้ "i" เพราะเป็นตัวแปรประเภท integer
+    $stmt->bind_param("i", $Booking_ID);  // ใช้ "i" เพราะเป็นตัวแปรประเภท integer
 
     // ตรวจสอบว่าการลบสำเร็จหรือไม่
     if ($stmt->execute()) {
-        $_SESSION['message'] = "<div class='alert alert-success'>ลบข้อมูลห้องเรียบร้อยแล้ว</div>";
+        $_SESSION['message'] = "<div class='alert alert-success'>ยกเลิกการจองเรียบร้อยแล้ว</div>";
     } else {
         $_SESSION['message'] = "<div class='alert alert-danger'>เกิดข้อผิดพลาด: " . $stmt->error . "</div>";
     }
@@ -28,12 +28,12 @@ if (isset($_GET['id'])) {
     $conn->close();
 
     // รีไดเรคไปหน้ารายการสมาชิก (members.php)
-    header('Location: booking.php');
+    header('Location: reports.php');
     exit;
 } else {
     // ถ้าไม่ได้ส่ง ID มาจะบอกว่าไม่พบข้อมูล
     $_SESSION['message'] = "<div class='alert alert-danger'>ไม่พบข้อมูลที่ต้องการลบ</div>";
-    header('Location: booking.php');
+    header('Location: reports.php');
     exit;
 }
 ?>

@@ -386,7 +386,7 @@ if (isset($_GET['id'])) {
                                 <i class='fas fa-edit'></i> แก้ไข
                             </button>";
 
-                        echo "<a href='delete_member.php?id=" . $row['personnel_id'] . "' class='btn btn-outline-danger btn-sm m-1' onclick='return confirm(\"คุณแน่ใจว่าต้องการลบห้องนี้?\")'>ลบ</a>";
+                        echo "<a href='delete_room.php?id=" . $row['Hall_ID'] . "' class='btn btn-outline-danger btn-sm m-1' onclick='return confirm(\"คุณแน่ใจว่าต้องการลบห้องนี้?\")'>ลบ</a>";
                         }
 
                         echo "</td>";
@@ -511,15 +511,11 @@ if (isset($_GET['id'])) {
         </div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        Copyright 2025 © - BangWa Developer
-    </div>
+
 
     <!-- JavaScript -->
     <script src="js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/2.1.7/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.1.7/js/dataTables.bootstrap5.js"></script>
 

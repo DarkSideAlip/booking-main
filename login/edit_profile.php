@@ -440,10 +440,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        Copyright 2025 © - BangWa Developer
-    </div>
+
 
     <script src="js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

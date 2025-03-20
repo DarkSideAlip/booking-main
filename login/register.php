@@ -2,7 +2,7 @@
 include 'db_connect.php';
 
 // กำหนด IP Address ของเจ้าของเซิร์ฟเวอร์
-$allowed_ip = '192.168.99.5'; // เปลี่ยนเป็น IP ของคุณที่อนุญาตให้เข้าถึง
+$allowed_ip = '::1'; // เปลี่ยนเป็น IP ของคุณที่อนุญาตให้เข้าถึง
 
 // ตรวจสอบ IP Address ของผู้ที่เข้าถึง
 if ($_SERVER['REMOTE_ADDR'] !== $allowed_ip) {

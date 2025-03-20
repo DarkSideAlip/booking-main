@@ -293,11 +293,18 @@ $result = $conn->query($sql);
 
     <div class="full-height">
         <div class="text-center bg-dark">
-            <div style="font-size: 20px">รายการที่ไม่อนุมัติ</div>
+            <div style="font-size: 20px">รายการไม่อนุมัติ</div>
         </div>
         <div class="container-custom">
             <div class="container mt-5">
-                <table id="member-table" class="table table-striped" style="width:100%">
+                <?php
+            // ตรวจสอบว่ามีข้อมูลหรือไม่ ถ้าไม่มีให้ซ่อนตารางด้วยการกำหนด style
+            $tableStyle = "";
+            if (!($result && $result->num_rows > 0)) {
+                $tableStyle = "display: none;";
+            }
+            ?>
+                <table id="member-table" class="table table-striped" style="width:100%; <?= $tableStyle ?>">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -310,50 +317,40 @@ $result = $conn->query($sql);
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-                        if ($result && $result->num_rows > 0):
-                            while ($row = $result->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?php echo $row['Booking_ID']; ?></td>
-                                    <td><?php echo htmlspecialchars($row['Topic_Name']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['Hall_Name']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['Booker_Name']); ?></td>
-                                    <td>
-                                        <?php echo htmlspecialchars($row['Date_Start']) . ' ' . 
-                                            htmlspecialchars($row['Time_Start']) . ' - ' . 
-                                            htmlspecialchars($row['Time_End']); ?>
-                                    </td>
-                                    <td><?php echo htmlspecialchars($row['Attendee_Count']); ?></td>
-                                    <td>
-                                        <?php if ($row['Status_Name'] == 'รอตรวจสอบ'): ?>
-                                        <span class="text-warning">รอตรวจสอบ</span>
-                                        <?php elseif ($row['Status_Name'] == 'อนุมัติ'): ?>
-                                        <span class="text-success">อนุมัติ</span>
-                                        <?php elseif ($row['Status_Name'] == 'ไม่อนุมัติ'): ?>
-                                        <span class="text-danger">ไม่อนุมัติ</span>
-                                        <?php else: ?>
-                                        <span class="text-muted">ไม่ทราบสถานะ</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
+                        <?php if ($result && $result->num_rows > 0): ?>
+                        <?php while ($row = $result->fetch_assoc()): ?>
                         <tr>
-                            <td colspan="7" class="text-center">ไม่มีข้อมูล</td>
+                            <td><?php echo $row['Booking_ID']; ?></td>
+                            <td><?php echo htmlspecialchars($row['Topic_Name']); ?></td>
+                            <td><?php echo htmlspecialchars($row['Hall_Name']); ?></td>
+                            <td><?php echo htmlspecialchars($row['Booker_Name']); ?></td>
+                            <td>
+                                <?php echo htmlspecialchars($row['Date_Start']) . ' ' .
+                                        htmlspecialchars($row['Time_Start']) . ' - ' .
+                                        htmlspecialchars($row['Time_End']); ?>
+                            </td>
+                            <td><?php echo htmlspecialchars($row['Attendee_Count']); ?></td>
+                            <td>
+                                <?php if ($row['Status_Name'] == 'รอตรวจสอบ'): ?>
+                                <span class="text-warning">รอตรวจสอบ</span>
+                                <?php elseif ($row['Status_Name'] == 'อนุมัติระยะที่สอง'): ?>
+                                <span class="text-success">อนุมัติ</span>
+                                <?php elseif ($row['Status_Name'] == 'ไม่อนุมัติ'): ?>
+                                <span class="text-danger">ไม่อนุมัติ</span>
+                                <?php else: ?>
+                                <span class="text-muted">ไม่ทราบสถานะ</span>
+                                <?php endif; ?>
+                            </td>
                         </tr>
+                        <?php endwhile; ?>
                         <?php endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
-
-
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        Copyright 2025 © - BangWa Developer
-    </div>
+
 
     <!-- JavaScript -->
     <script src="js/bootstrap.bundle.min.js"></script>

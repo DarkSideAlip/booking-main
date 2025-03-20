@@ -524,7 +524,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <th>วันที่และเวลา</th>
                         <th>จำนวน</th>
                         <th>สถานะ (Status)</th>
-                        <th>ผู้อนุมัติ (Approver)</th>
                         <th>เหตุผล (Reason)</th>
                     </tr>
                 </thead>
@@ -581,8 +580,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <span class="text-muted">ไม่ทราบสถานะ</span>
                             <?php endif; ?>
                         </td>
-
-                        <td><?php echo htmlspecialchars($row['Approver_Name']); ?></td>
                         <td>
                             <!-- ปุ่มรายละเอียด -->
                             <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal"
@@ -612,7 +609,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                             </div>
 
-                            
+
 
                             <?php if ((int)$row['Status_ID'] === 1): ?>
                             <!-- ปุ่มอนุมัติระยะแรก -->
@@ -622,6 +619,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <i class="fas fa-check-circle"></i>
                             </button>
                             <?php endif; ?>
+                            <?php if ($_SESSION['role_id'] == 2): ?>
+                            <a href="delete_booking.php?id=<?php echo $row['Booking_ID']; ?>"
+                                class="btn btn-outline-danger btn-sm ms-2"
+                                onclick="return confirm('คุณแน่ใจว่าต้องการลบผู้ใช้งานนี้?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                            <?php endif; ?>
+
                             <?php elseif ((int)$row['Status_ID'] === 2): ?>
                             <!-- ปุ่มอนุมัติระยะสุดท้าย -->
                             <?php if ($_SESSION['role_id'] == 2 || $_SESSION['role_id'] == 3): ?>
@@ -700,12 +705,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </tbody>
             </table>
         </div>
-    </div>
-
-
-    <!-- Footer -->
-    <div class="footer">
-        Copyright 2025 © - BangWa Developer
     </div>
 
     <!-- JavaScript -->
