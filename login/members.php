@@ -516,11 +516,11 @@ if (isset($_GET['id'])) {
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label">รหัสผ่านเดิม</label>
-                            <input type="password" class="form-control" id="edit_password" name="password" required>
+                            <input type="password" class="form-control" id="password" name="password" required>
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">รหัสผ่านใหม่</label>
-                            <input type="password" class="form-control" id="new_password" name="password" required>
+                            <label for="new_password" class="form-label">รหัสผ่านใหม่</label>
+                            <input type="password" class="form-control" id="new_password" name="new_password" required>
                         </div>
                         <div class="mb-3">
                             <label for="role_id" class="form-label">สถานะ</label>
