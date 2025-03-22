@@ -45,98 +45,144 @@ while ($row = $result->fetch_assoc()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // ดึงข้อมูลจากฟอร์ม
-    $new_first_name = $_POST['first_name'];
-    $new_last_name = $_POST['last_name'];
-    $new_email = $_POST['email'];
-    $new_phone = $_POST['phone'];
-    $new_telegram_id = $_POST['telegram_id'];
+    // รับค่าจากฟอร์ม (แม้จะเป็นค่าว่างก็รับมา)
+    $posted_first_name   = isset($_POST['first_name']) ? $_POST['first_name'] : '';
+    $posted_last_name    = isset($_POST['last_name']) ? $_POST['last_name'] : '';
+    $posted_email        = isset($_POST['email']) ? $_POST['email'] : '';
+    $posted_phone        = isset($_POST['phone']) ? $_POST['phone'] : '';
+    $posted_telegram_id  = isset($_POST['telegram_id']) ? $_POST['telegram_id'] : '';
+    $posted_new_password = isset($_POST['new_password']) ? $_POST['new_password'] : '';
+    $posted_confirm_password = isset($_POST['confirm_password']) ? $_POST['confirm_password'] : '';
 
-    $new_position_id = $position_id;
-    $new_subject_group_id = $subject_group_id;
-    $new_role_id = $role_id;
+    // ตรวจสอบกรณีรหัสผ่าน ถ้ามีการกรอก (แม้จะเป็นค่าว่างก็ถือว่าไม่ต้องอัปเดต)
+    if ($posted_new_password !== '') {
+        if ($posted_new_password !== $posted_confirm_password) {
+            echo "<script>
+                    alert('รหัสผ่านไม่ตรงกัน!');
+                    window.location.href='edit_profile.php';
+                  </script>";
+            exit;
+        }
+    }
 
-    $new_password = $_POST['new_password'];
-    $confirm_password = $_POST['confirm_password'];
+    // ตรวจสอบข้อมูลซ้ำแบบแยกฟิลด์
+    // สำหรับ Email หากมีการเปลี่ยนแปลงและไม่เป็นค่าว่าง
+    if ($posted_email !== $email && $posted_email !== '') {
+        $stmt = $conn->prepare("SELECT Personnel_ID FROM personnel WHERE Email = ? AND Personnel_ID != ?");
+        $stmt->bind_param('si', $posted_email, $personnel_id);
+        $stmt->execute();
+        $stmt->store_result();
+        if ($stmt->num_rows > 0) {
+            echo "<script>
+                    alert('อีเมลนี้มีผู้ใช้งานแล้ว!');
+                    window.location.href='edit_profile.php';
+                  </script>";
+            exit;
+        }
+        $stmt->close();
+    }
 
-    // ตรวจสอบว่ามีข้อมูลซ้ำหรือไม่
-    $duplicate_check_sql = "SELECT Personnel_ID FROM personnel WHERE (Email = ? OR Telegram_ID = ?) AND Personnel_ID != ?";
-    $stmt = $conn->prepare($duplicate_check_sql);
-    $stmt->bind_param('ssi', $new_email, $new_telegram_id, $personnel_id);
-    $stmt->execute();
-    $stmt->store_result();
+    // สำหรับ Telegram ID หากมีการเปลี่ยนแปลงและไม่เป็นค่าว่าง
+    if ($posted_telegram_id !== $telegram_id && $posted_telegram_id !== '') {
+        $stmt = $conn->prepare("SELECT Personnel_ID FROM personnel WHERE Telegram_ID = ? AND Personnel_ID != ?");
+        $stmt->bind_param('si', $posted_telegram_id, $personnel_id);
+        $stmt->execute();
+        $stmt->store_result();
+        if ($stmt->num_rows > 0) {
+            echo "<script>
+                    alert('Telegram ID นี้มีผู้ใช้งานแล้ว!');
+                    window.location.href='edit_profile.php';
+                  </script>";
+            exit;
+        }
+        $stmt->close();
+    }
 
-    if ($stmt->num_rows > 0) {
-        // ข้อมูลซ้ำ
+    // สร้างอาร์เรย์สำหรับเก็บ field ที่มีการเปลี่ยนแปลง (แม้จะเป็นค่าว่าง) และค่าที่จะ bind
+    $updateFields = [];
+    $params = [];
+    $paramTypes = "";
+
+    if ($posted_first_name !== $first_name) {
+        $updateFields[] = "First_Name = ?";
+        $params[] = $posted_first_name;
+        $paramTypes .= "s";
+    }
+
+    if ($posted_last_name !== $last_name) {
+        $updateFields[] = "Last_Name = ?";
+        $params[] = $posted_last_name;
+        $paramTypes .= "s";
+    }
+
+    if ($posted_email !== $email) {
+        $updateFields[] = "Email = ?";
+        $params[] = $posted_email;
+        $paramTypes .= "s";
+    }
+
+    if ($posted_phone !== $phone) {
+        $updateFields[] = "Phone = ?";
+        $params[] = $posted_phone;
+        $paramTypes .= "s";
+    }
+
+    if ($posted_telegram_id !== $telegram_id) {
+        $updateFields[] = "Telegram_ID = ?";
+        $params[] = $posted_telegram_id;
+        $paramTypes .= "s";
+    }
+
+    if ($posted_new_password !== '') {
+        $updateFields[] = "Password = ?";
+        $hashed_password = password_hash($posted_new_password, PASSWORD_DEFAULT);
+        $params[] = $hashed_password;
+        $paramTypes .= "s";
+    }
+
+    // หากไม่มีการเปลี่ยนแปลงใด ๆ
+    if (empty($updateFields)) {
         echo "<script>
-                alert('อีเมลหรือ Telegram ID นี้มีผู้ใช้งานแล้ว!');
+                alert('ไม่มีการเปลี่ยนแปลงข้อมูล!');
                 window.location.href='edit_profile.php';
               </script>";
         exit;
-    } elseif (empty($new_first_name) || empty($new_last_name) || empty($new_email)) {
+    }
+
+    // สร้างคำสั่ง SQL แบบไดนามิกสำหรับอัปเดตข้อมูล
+    $sql = "UPDATE personnel SET " . implode(", ", $updateFields) . " WHERE Personnel_ID = ?";
+    $params[] = $personnel_id;
+    $paramTypes .= "i";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($paramTypes, ...$params);
+
+    if ($stmt->execute()) {
+        // อัปเดต session สำหรับข้อมูลที่เปลี่ยนแปลง
+        if ($posted_first_name !== $first_name) {
+            $_SESSION['first_name'] = $posted_first_name;
+        }
+        if ($posted_last_name !== $last_name) {
+            $_SESSION['last_name'] = $posted_last_name;
+        }
+        if ($posted_phone !== $phone) {
+            $_SESSION['phone'] = $posted_phone;
+        }
+        if ($posted_telegram_id !== $telegram_id) {
+            $_SESSION['telegram_id'] = $posted_telegram_id;
+        }
+
         echo "<script>
-                alert('กรุณากรอกข้อมูลให้ครบถ้วนเพื่ออัปเดตข้อมูล!');
-                window.location.href='edit_profile.php';
-              </script>";
-        exit;
-    } elseif (!empty($new_password) && $new_password !== $confirm_password) {
-        echo "<script>
-                alert('รหัสผ่านไม่ตรงกัน!');
+                alert('ข้อมูลอัปเดตเรียบร้อยแล้ว!');
                 window.location.href='edit_profile.php';
               </script>";
         exit;
     } else {
-        // ตรวจสอบว่ามีการเปลี่ยนแปลงข้อมูลหรือไม่
-        if (
-            $new_first_name == $first_name &&
-            $new_last_name == $last_name &&
-            $new_email == $email &&
-            $new_phone == $phone &&
-            $new_telegram_id == $telegram_id &&
-            empty($new_password) // ถ้าไม่มีการเปลี่ยนรหัสผ่าน
-        ) {
-            // ถ้าไม่มีการเปลี่ยนแปลงข้อมูล
-            echo "<script>
-                    alert('ไม่มีการเปลี่ยนแปลงข้อมูล!');
-                    window.location.href='edit_profile.php';
-                  </script>";
-            exit;
-        }
-
-        // ถ้ามีการเปลี่ยนแปลงข้อมูล ทำการอัปเดต
-        $sql = "UPDATE personnel SET First_Name = ?, Last_Name = ?, Email = ?, Phone = ?, Telegram_ID = ?, Position_ID = ?, Subject_Group_ID = ?, Role_ID = ?";
-
-        if (!empty($new_password)) {
-            // เข้ารหัสรหัสผ่านใหม่ด้วย password_hash() ก่อนบันทึกลงฐานข้อมูล
-            $sql .= ", Password = ?";
-            $stmt = $conn->prepare($sql);
-            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT); // เข้ารหัสรหัสผ่านใหม่
-            $stmt->bind_param('sssssssss', $new_first_name, $new_last_name, $new_email, $new_phone, $new_telegram_id, $new_position_id, $new_subject_group_id, $new_role_id, $hashed_password);
-        } else {
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param('ssssssss', $new_first_name, $new_last_name, $new_email, $new_phone, $new_telegram_id, $new_position_id, $new_subject_group_id, $new_role_id);
-        }
-
-        if ($stmt->execute()) {
-            // อัปเดต session หลังจากอัปเดตข้อมูลสำเร็จ
-            $_SESSION['first_name'] = $new_first_name;
-            $_SESSION['last_name'] = $new_last_name;
-            $_SESSION['phone'] = $new_phone;
-            $_SESSION['telegram_id'] = $new_telegram_id;
-
-            // รีเฟรชหน้าเพื่อดึงข้อมูลใหม่
-            echo "<script>
-                    alert('ข้อมูลอัปเดตเรียบร้อยแล้ว!');
-                    window.location.href='edit_profile.php';
-                  </script>";
-            exit;
-        } else {
-            echo "<script>
-                    alert('เกิดข้อผิดพลาด: " . addslashes($stmt->error) . "');
-                    window.location.href='edit_profile.php';
-                  </script>";
-            exit;
-        }
+        echo "<script>
+                alert('เกิดข้อผิดพลาด: " . addslashes($stmt->error) . "');
+                window.location.href='edit_profile.php';
+              </script>";
+        exit;
     }
 }
 
@@ -272,7 +318,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         margin-top: auto;
         position: relative;
     }
-    }
     </style>
 </head>
 
@@ -381,12 +426,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mb-3">
                     <label for="first_name" class="form-label">ชื่อจริง</label>
                     <input type="text" id="first_name" class="form-control" name="first_name"
-                        placeholder="แก้ไขชื่อของคุณ" value="<?php echo $first_name; ?>" required>
+                        placeholder="แก้ไขชื่อของคุณ" value="<?php echo $first_name; ?>">
                 </div>
                 <div class="mb-3">
                     <label for="last_name" class="form-label">นามสกุล</label>
                     <input type="text" id="last_name" class="form-control" name="last_name"
-                        placeholder="แก้ไขนามสกุลของคุณ" value="<?php echo $last_name; ?>" required>
+                        placeholder="แก้ไขนามสกุลของคุณ" value="<?php echo $last_name; ?>">
                 </div>
                 <div class="mb-3">
                     <label for="position_id" class="form-label">ตำแหน่ง</label>
@@ -427,12 +472,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mb-3">
                     <label for="telegram_id" class="form-label">Telegram ID</label>
                     <input type="text" id="telegram_id" class="form-control" name="telegram_id" value="<?php echo $telegram_id; ?>"
-                        required>
+                        >
                 </div>
                 <div class="mb-3">
                     <label for="phone" class="form-label">เบอร์โทรศัพท์</label>
                     <input type="text" id="phone" class="form-control" name="phone" value="<?php echo $phone; ?>"
-                        required>
+                        >
                 </div>
 
                 <button class="btn btn-outline-dark">บันทึกข้อมูลผู้ใช้ใหม่</button>

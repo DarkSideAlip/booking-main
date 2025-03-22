@@ -45,6 +45,18 @@ if ($result_all->num_rows > 0) {
 }
 $conn->close();
 
+$sql = "SELECT Hall_Name, Dot_Color FROM hall";
+$result = $conn->query($sql);
+$rooms = [];
+if ($result && $result->num_rows > 0) {
+    while($row = $result->fetch_assoc()){
+        $rooms[] = $row;
+    }
+}
+$conn->close();
+// สมมุติว่าเราเลือกเอาค่าสีของห้องแรกมาแสดงใน dashboard:
+$room_dot_color = isset($rooms[0]['Dot_Color']) ? $rooms[0]['Dot_Color'] : '#ccc';
+
 ?>
 
 <!DOCTYPE html>
@@ -581,7 +593,7 @@ $conn->close();
                 <h2 id="month-year"></h2>
                 <div class="navigation">
                     <button id="prev-month" class="btn btn-outline-secondary">
-                        <</button>
+                        < </button>
                             <button id="next-month" class="btn btn-outline-secondary">></button>
                 </div>
             </div>
@@ -768,13 +780,13 @@ $conn->close();
                 const dotsContainer = document.createElement('div');
                 dotsContainer.classList.add('booking-dots');
 
-                // จำกัดจุดสีที่แสดง 1-3 จุด (สุ่ม)
-                let numDots = Math.min(bookingForDate.length, Math.floor(Math.random() * 3) + 1);
-                for (let i = 0; i < numDots; i++) {
+                // แสดงจุดสีสำหรับแต่ละการจอง โดยใช้สีที่ตั้งไว้ในฐานข้อมูล
+                bookingForDate.forEach(booking => {
                     const dot = document.createElement('div');
-                    dot.classList.add('booking-dot', bookingForDate[i].color);
+                    dot.classList.add('booking-dot'); // กำหนดรูปทรงและขนาด dot ผ่าน CSS
+                    dot.style.backgroundColor = booking.color; // ใช้สีจากฐานข้อมูล (key "color")
                     dotsContainer.appendChild(dot);
-                }
+                });
                 cell.appendChild(dotsContainer);
             }
 
@@ -796,7 +808,6 @@ $conn->close();
     }
 
     // ฟังก์ชันแสดงรายละเอียดการจองใน Modal
-    // โดยแสดงแต่ละการจองในตารางแยกกัน
     function showBookingDetails(bookingsForDate, date) {
         const modalBody = document.getElementById('bookingModalBody');
         const modalTitle = document.getElementById('bookingModalLabel');
@@ -804,40 +815,57 @@ $conn->close();
         if (bookingsForDate.length > 0) {
             modalTitle.textContent = `รายละเอียดการจอง (${date})`;
 
-            // สร้าง HTML สำหรับตารางแยกแต่ละการจอง
             let tablesHtml = bookingsForDate.map((booking, index) => {
+                // สร้าง dotHtml จากสีในฐานข้อมูล (booking.color)
+                const dotHtml = `
+        <span 
+            style="
+                display: inline-block; 
+                width: 12px; 
+                height: 12px; 
+                border-radius: 50%; 
+                background-color: ${booking.color || '#ccc'}; 
+                margin-right: 8px;
+            ">
+        </span>
+    `;
+
                 return `
-                <table class="table table-striped table-bordered" style="margin-bottom: 20px; table-layout: auto; width: 100%;">
-                    <thead>
-                        <tr>
-                            <th colspan="2" style="text-align: center;">การจอง ${index + 1}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th style="text-align: left; vertical-align: top;">ผู้จอง</th>
-                            <td style="text-align: left; vertical-align: top;">${booking.booker_name || 'ไม่ระบุ'}</td>
-                        </tr>
-                        <tr>
-                            <th style="text-align: left; vertical-align: top;">เบอร์ผู้จอง</th>
-                            <td style="text-align: left; vertical-align: top;">${booking.booker_phone || '-'}</td>
-                        </tr>
-                        <tr>
-                            <th style="text-align: left; vertical-align: top;">ชื่อห้อง</th>
-                            <td style="text-align: left; vertical-align: top;">${booking.room_name || 'ไม่ระบุ'}</td>
-                        </tr>
-                        <tr>
-                            <th style="text-align: left; vertical-align: top;">ช่วงเวลาที่จอง</th>
-                            <td style="text-align: left; vertical-align: top;">${booking.booking_time || '-'}</td>
-                        </tr>
-                        <tr>
-                            <th style="text-align: left; vertical-align: top;">รายละเอียด</th>
-                            <td style="text-align: left; vertical-align: top;">${booking.details || '-'}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            `;
+        <table class="table table-striped table-bordered" style="margin-bottom: 20px; table-layout: auto; width: 100%;">
+            <thead>
+                <tr>
+                    <th colspan="2" style="text-align: center;">
+                        <!-- แทรก dot ไว้ด้านหน้าข้อความ -->
+                        ${dotHtml}การจองครั้งที่ ${index + 1}
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th style="text-align: left; vertical-align: top;">ผู้จอง</th>
+                    <td style="text-align: left; vertical-align: top;">${booking.booker_name || 'ไม่ระบุ'}</td>
+                </tr>
+                <tr>
+                    <th style="text-align: left; vertical-align: top;">เบอร์ผู้จอง</th>
+                    <td style="text-align: left; vertical-align: top;">${booking.booker_phone || '-'}</td>
+                </tr>
+                <tr>
+                    <th style="text-align: left; vertical-align: top;">ชื่อห้อง</th>
+                    <td style="text-align: left; vertical-align: top;">${booking.room_name || 'ไม่ระบุ'}</td>
+                </tr>
+                <tr>
+                    <th style="text-align: left; vertical-align: top;">ช่วงเวลาที่จอง</th>
+                    <td style="text-align: left; vertical-align: top;">${booking.booking_time || '-'}</td>
+                </tr>
+                <tr>
+                    <th style="text-align: left; vertical-align: top;">รายละเอียด</th>
+                    <td style="text-align: left; vertical-align: top;">${booking.details || '-'}</td>
+                </tr>
+            </tbody>
+        </table>
+    `;
             }).join('');
+
 
             modalBody.innerHTML = tablesHtml;
         } else {
@@ -865,6 +893,8 @@ $conn->close();
     // ดึงข้อมูลจากฐานข้อมูลครั้งแรก เมื่อโหลดหน้าเสร็จ
     fetchBookings();
     </script>
+
+
 
 
 

@@ -88,6 +88,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status_id      = 1;  // สมมติ "รอตรวจสอบ"
     $approver_id    = $_SESSION['personnel_id'];
     $approver_stage    = 0;
+
+    // **ตรวจสอบการจองเวลาซ้ำกัน**
+    // เงื่อนไข: หากมีการจองในห้องเดียวกัน (hall_id) ในวันที่เดียวกัน (date_start)
+    // และช่วงเวลาใหม่มีการทับซ้อนกับช่วงเวลาที่มีอยู่ (time_start < existing time_end และ time_end > existing time_start)
+    $conflictSql = "SELECT COUNT(*) AS conflictCount 
+                    FROM booking 
+                    WHERE Hall_ID = :hall_id 
+                      AND Date_Start = :date_start 
+                      AND (Time_Start < :time_end AND Time_End > :time_start)";
+    $stmtConflict = $pdo->prepare($conflictSql);
+    $stmtConflict->execute([
+        ':hall_id'    => $hall_id,
+        ':date_start' => $date_start,
+        ':time_start' => $time_start,
+        ':time_end'   => $time_end
+    ]);
+    $result = $stmtConflict->fetch(PDO::FETCH_ASSOC);
+    if ($result['conflictCount'] > 0) {
+        $_SESSION['message'] = "<div class='alert alert-danger'>เวลาที่คุณเลือกชนกับการจองที่มีอยู่แล้ว กรุณาเลือกช่วงเวลาใหม่</div>";
+        header("Location: booking_form.php");
+        exit;
+    }
  
 
 

@@ -336,7 +336,7 @@ if (isset($_GET['id'])) {
                 <tbody>
                     <?php
                 // ดึงข้อมูลห้องจากฐานข้อมูล
-                $sql = "SELECT Hall_ID, Hall_Name, Hall_Detail, Status_Hall, Hall_Size, Capacity FROM HALL";
+                $sql = "SELECT Hall_ID, Hall_Name, Hall_Detail, Status_Hall, Hall_Size, Capacity, Dot_Color FROM HALL";
                 $result = $conn->query($sql);
 
                 if ($result->num_rows > 0) {
@@ -344,15 +344,17 @@ if (isset($_GET['id'])) {
                     $count = 1;
                     while ($row = $result->fetch_assoc()) {
                         echo "<tr>";
-                        echo "<td>" . $row['Hall_ID'] . "</td>";
+                        echo "<td>
+                                <span class='dot' style='display:inline-block; width:10px; height:10px; border-radius:50%; background-color:" . $row['Dot_Color'] . ";'></span>
+                            </td>";
                         echo "<td>" . $row['Hall_Name'] . "</td>";
                         echo "<td>" . $row['Hall_Detail'] . "</td>";
                         // แปลง Status_Hall เป็นข้อความ
                         $status_text = "";
                         if ($row['Status_Hall'] == 1) {
-                                $status_text = "เปิดการใช้งาน"; // ถ้า Status_Hall เป็น 1 แสดงว่า "เปิด"
+                                $status_text = "<span style='color:green'>เปิดการใช้งาน</span>"; // ถ้า Status_Hall เป็น 1 แสดงว่า "เปิด"
                             } else {
-                                $status_text = "ปิดการใข้งาน"; // ถ้า Status_Hall เป็น 0 แสดงว่า "ปิด"
+                                $status_text = "<span style='color:red'>ปิดปรับปรุง</span>"; // ถ้า Status_Hall เป็น 0 แสดงว่า "ปิด"
                             }
                         echo "<td>" . $status_text . "</td>";
                         echo "<td>";

@@ -9,8 +9,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $hall_size   = $_POST['hall_size'];
     $capacity    = $_POST['capacity'];
     $status_hall = $_POST['status_hall']; // สถานะห้อง
-    // กำหนดค่าเริ่มต้นสำหรับรูปภาพ
+
     $hall_image  = '';
+    $dot_color = sprintf('#%06X', mt_rand(0, 0xFFFFFF));
 
     // ตรวจสอบห้องที่มีชื่อซ้ำ
     $sql_check = "SELECT * FROM hall WHERE Hall_Name = ?";
@@ -46,12 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         // เพิ่มห้องใหม่พร้อมรูปภาพ
-        $sql = "INSERT INTO hall (Hall_Name, Hall_Detail, Hall_Size, Capacity, Status_Hall, Hall_Image) 
-                VALUES (?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO hall (Hall_Name, Hall_Detail, Hall_Size, Capacity, Status_Hall, Hall_Image, Dot_Color) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         // ตัวอย่างนี้ใช้ bind_param("ssssi s") แต่ต้องไม่มีช่องว่างในสตริงรูปแบบ
         // ลำดับ: Hall_Name (s), Hall_Detail (s), Hall_Size (s), Capacity (i), Status_Hall (i), Hall_Image (s)
-        $stmt->bind_param("sssiis", $hall_name, $hall_detail, $hall_size, $capacity, $status_hall, $hall_image);
+        $stmt->bind_param("sssiiss", $hall_name, $hall_detail, $hall_size, $capacity, $status_hall, $hall_image, $dot_color);
 
         if ($stmt->execute()) {
             $_SESSION['message'] = "<div class='alert alert-success'>ห้องถูกเพิ่มสำเร็จ!</div>";
