@@ -73,10 +73,8 @@ $result = $conn->query($sql);
 
     .table td,
     .table th {
-        padding-top: 15px;
-        /* Padding ด้านบน */
-        padding-bottom: 15px;
-        /* Padding ด้านล่าง */
+        padding-top: 15px;  /* Padding ด้านบน */
+        padding-bottom: 15px; /* Padding ด้านล่าง */
         text-align: center;
         /* จัดกึ่งกลางแนวนอน */
         vertical-align: middle;
@@ -177,7 +175,6 @@ $result = $conn->query($sql);
         padding-bottom: 20px;
         flex-grow: 1;
         overflow: auto;
-        padding-bottom: 20px;
     }
 
     .text-center {
@@ -193,15 +190,7 @@ $result = $conn->query($sql);
 
     }
 
-    .footer {
-        width: 100%;
-        background-color: #f8f9fa;
-        padding: 20px;
-        font-size: 16px;
-        color: #6c757d;
-        margin-top: auto;
-        position: relative;
-    }
+
     </style>
 </head>
 
@@ -303,10 +292,10 @@ $result = $conn->query($sql);
             // ตรวจสอบว่ามีข้อมูลหรือไม่ ถ้าไม่มีให้ซ่อนตารางด้วยการกำหนด style
             $tableStyle = "";
             if (!($result && $result->num_rows > 0)) {
-                $tableStyle = "display: none;";
+                $tableStyle = "display: none; width:100%;";
             }
             ?>
-                <table id="member-table" class="table table-striped" style="width:100%; <?= $tableStyle ?>">
+                <table id="member-table" class="table table-striped" <?= $tableStyle ?>">
                     <thead>
                         <tr>
                             <th>#</th>

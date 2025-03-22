@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
 
             // เปลี่ยนเส้นทางไปยังหน้าหลัก
-            header('Location: booking.php');
+            header('Location: main.php');
             exit;
         } else {
             $error_message = "รหัสผ่านไม่ถูกต้อง"; // แจ้งเตือนว่ารหัสผ่านไม่ถูกต้อง

@@ -18,6 +18,24 @@ if (isset($_GET['id'])) {
         echo "<tr><th>รายละเอียด</th><td>" . $hall['Hall_Detail'] . "</td></tr>";
         echo "<tr><th>ขนาดห้อง</th><td>" . $hall['Hall_Size'] . "</td></tr>";
         echo "<tr><th>ความจุ</th><td>" . $hall['Capacity'] . " คน</td></tr>";
+
+        // แสดงรูปห้อง (ถ้าคอลัมน์ Hall_Image เก็บ path รูปภาพ)
+        // ตรวจสอบว่ามีรูปภาพหรือไม่
+        if (!empty($hall['Hall_Image'])) {
+            echo "<tr>
+                    <th>รูปห้อง</th>
+                    <td>
+                        <img src='" . $hall['Hall_Image'] . "' 
+                             alt='Hall Image' 
+                             class='img-fluid' 
+                             style='max-width:250px;'>
+                    </td>
+                  </tr>";
+        } else {
+            echo "<tr><th>รูปห้อง</th><td>ไม่มีรูปภาพ</td></tr>";
+        }
+        
+
         echo "</table>";
     } else {
         echo "ไม่พบข้อมูล";
@@ -25,6 +43,5 @@ if (isset($_GET['id'])) {
 } else {
     echo "ไม่พบข้อมูล";
 }
-
-
 ?>
+

@@ -1,184 +1,214 @@
 <?php
 session_start();
-include 'db_connect.php';
-include 'auth_check.php';
 
-// ฟังก์ชันส่งข้อความไปยัง Telegram
+// สร้างการเชื่อมต่อ PDO (ปรับค่าตามเซิร์ฟเวอร์ของคุณ)
+try {
+    $pdo = new PDO("mysql:host=localhost;dbname=booking-main", "root", "alip4523pop", [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ]);
+} catch (PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
+}
+
+include 'auth_check.php';  // ตรวจสอบสิทธิ์การเข้าถึง
+
+// ฟังก์ชันส่งข้อความไปยัง Telegram (ถ้าไม่ต้องการใช้สามารถตัดออกได้)
 function sendTelegramMessage($chatId, $message, $botToken) {
     $url = "https://api.telegram.org/bot$botToken/sendMessage";
-    
-    // สร้างข้อมูลที่ต้องการส่งไปยัง Telegram
     $data = [
         'chat_id' => $chatId,
-        'text' => $message,
+        'text'    => $message,
     ];
-
-    // ใช้ cURL เพื่อส่งคำขอ
-    $ch = curl_init();
-
-    // ตั้งค่าต่างๆ สำหรับการใช้ cURL
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-
-    // ปิดการตรวจสอบ SSL (เมื่อระบบไม่สามารถตรวจสอบใบรับรองได้)
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  // ปิดการตรวจสอบใบรับรอง SSL
-
-    // ส่งคำขอ
-    $result = curl_exec($ch);
-    
-    // ตรวจสอบผลลัพธ์
+    $options = [
+        'http' => [
+            'method'  => 'POST',
+            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+            'content' => http_build_query($data)
+        ]
+    ];
+    $context  = stream_context_create($options);
+    $result = file_get_contents($url, false, $context);
     if ($result === false) {
-        error_log("Error sending message to Telegram: " . curl_error($ch));
-    } else {
-        error_log("Message sent successfully to Telegram: $result");
+        error_log("Error sending message to Telegram.");
+        return false;
     }
-
-    // ปิดการเชื่อมต่อ cURL
-    curl_close($ch);
-
-    return $result !== false;
+    error_log("Message sent successfully to Telegram: $result");
+    return true;
 }
 
-// BOT Token ของคุณ
-$telegramBotToken = "YOUR_BOT_TOKEN_HERE";
+// Token สำหรับ Telegram (ปรับให้ตรงกับของคุณ)
+$telegramBotToken = "7668345720:AAGIKyTGFQGUGiMOjbax5Mv9Y30Chydnqc4";
 
-// ดึงข้อมูลห้องประชุมทั้งหมดจากฐานข้อมูล
+// -----------------------------------------------------------------------
+// ดึงข้อมูลห้องประชุม (ตัวอย่างสำหรับแสดงเลือกห้อง)
 $sql = "SELECT Hall_ID, Hall_Name, Capacity FROM HALL";
-$result = $conn->query($sql);
+$stmt = $pdo->query($sql);
+$halls = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$halls = [];
-while ($row = $result->fetch_assoc()) {
-    $halls[] = $row;
-}
+// รับค่า hall_id จาก GET หรือ Session
+$selected_hall_id = isset($_GET['hall_id'])
+    ? $_GET['hall_id']
+    : (isset($_SESSION['selected_hall_id']) ? $_SESSION['selected_hall_id'] : null);
 
-// รับค่า hall_id จาก URL หรือจาก session (หากมีการส่งฟอร์มแล้ว)
-$selected_hall_id = isset($_GET['hall_id']) ? $_GET['hall_id'] : (isset($_SESSION['selected_hall_id']) ? $_SESSION['selected_hall_id'] : null);
 $selected_hall_name = '';
-$selected_capacity = 0; // ความจุเริ่มต้นเป็น 0
+$selected_capacity  = 0;
 
-// หากมีการเลือกห้อง (จาก $_GET หรือ $_SESSION)
-if ($selected_hall_id) {
-    // ดึงชื่อห้องและความจุจากฐานข้อมูล
-    $sql = "SELECT Hall_Name, Capacity FROM HALL WHERE Hall_ID = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $selected_hall_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        $hall = $result->fetch_assoc();
-        $selected_hall_name = $hall['Hall_Name']; // จัดเก็บชื่อห้อง
-        $selected_capacity = $hall['Capacity']; // จัดเก็บความจุห้อง
+if ($selected_hall_id !== null) {
+    try {
+        $sql = "SELECT Hall_Name, Capacity FROM HALL WHERE Hall_ID = :hall_id";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':hall_id' => $selected_hall_id]);
+        $hall = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($hall) {
+            $selected_hall_name = $hall['Hall_Name'];
+            $selected_capacity  = $hall['Capacity'];
+        } else {
+            error_log("No hall found with ID: " . $selected_hall_id);
+        }
+    } catch (PDOException $e) {
+        error_log("Error fetching hall: " . $e->getMessage());
     }
+} else {
+    error_log("No selected hall id provided.");
 }
 
-// เมื่อผู้ใช้ส่งฟอร์ม
+
+// -----------------------------------------------------------------------
+// เมื่อผู้ใช้ส่งฟอร์ม (method="POST")
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $hall_id = $_POST['hall_id'];
-    $attendees = $_POST['attendees'];
-    $date_start = $_POST['date_start'];
-    $time_start = $_POST['time_start'];
-    $time_end = $_POST['time_end'];
-    $topic_name = $_POST['topic_name'];
-    $booking_detail = $_POST['booking_detail'];
-    $status_id = 1; // สถานะ "รอตรวจสอบ"
-    $approver_id = $_SESSION['personnel_id'];
+    // รับข้อมูลจากฟอร์ม
+    $hall_id        = $_POST['hall_id'];
+    $attendees      = $_POST['attendees'];
+    $date_start     = $_POST['date_start'];   // ใช้กับ Date_Start_Time
+    $time_start     = $_POST['time_start'];   // ใช้กับ Start_Time
+    $time_end       = $_POST['time_end'];     // ใช้กับ End_Time
+    $topic_name     = $_POST['topic_name'];
+    $booking_detail = $_POST['booking_detail'];  // ถ้าต้องการเก็บ ควรเพิ่มคอลัมน์ในตาราง (ตัวอย่างนี้ไม่ใช้)
+    $status_id      = 1;  // สมมติ "รอตรวจสอบ"
+    $approver_id    = $_SESSION['personnel_id'];
+    $approver_stage    = 0;
+ 
 
-    // ตรวจสอบว่าห้องประชุมถูกเลือกหรือไม่
-    if (empty($hall_id)) {
-        $_SESSION['message'] = "<div class='alert alert-danger'>ห้องประชุมไม่ถูกเลือก</div>";
-        header("Location: booking_form.php");
-        exit;
-    }
 
-    // ตรวจสอบความจุของห้องประชุม
-    $sql = "SELECT Capacity, Hall_Name FROM HALL WHERE Hall_ID = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $hall_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    // 3) จัดการไฟล์ที่แนบ (File Upload)
+    $uploaded_File_Path = '';
+    $file_Type = '';
+    $file_Size = 0;
+    $uploaded_At = '';
 
-    if ($result->num_rows > 0) {
-        $hall = $result->fetch_assoc();
-        $capacity = $hall['Capacity'];
-        $hallName = $hall['Hall_Name'];  // ดึงชื่อห้องประชุม
-
-        // ตรวจสอบว่าจำนวนผู้เข้าประชุมไม่เกินความจุ
-        if ($attendees > $capacity) {
-            $_SESSION['message'] = "<div class='alert alert-danger'>จำนวนผู้เข้าประชุมเกินความจุสูงสุดของห้องประชุม (ความจุ: $capacity คน)</div>";
+    if (isset($_FILES['booking_file']) && $_FILES['booking_file']['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = 'uploads/';
+        // ถ้าไฟล์ PHP อยู่ในโฟลเดอร์ย่อย เช่น login ให้ระบุเป็น "login/uploads/" ตามความเหมาะสม
+        $fileName = basename($_FILES['booking_file']['name']);
+        $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
+        if (in_array($fileExtension, $allowedTypes)) {
+            $newFileName = time() . '_' . uniqid() . '.' . $fileExtension;
+            $targetFilePath = $uploadDir . $newFileName;
+            if (move_uploaded_file($_FILES['booking_file']['tmp_name'], $targetFilePath)) {
+                $uploaded_File_Path = $targetFilePath;
+                $file_Type = $_FILES['booking_file']['type'];
+                $file_Size = $_FILES['booking_file']['size'];
+                $uploaded_At = date("Y-m-d H:i:s");
+            } else {
+                $_SESSION['message'] = "<div class='alert alert-danger'>เกิดข้อผิดพลาดในการอัปโหลดไฟล์</div>";
+                header("Location: booking_form.php");
+                exit;
+            }
+        } else {
+            $_SESSION['message'] = "<div class='alert alert-danger'>ประเภทไฟล์ไม่ถูกต้อง (อนุญาตเฉพาะ JPG, JPEG, PNG, GIF)</div>";
             header("Location: booking_form.php");
             exit;
         }
-    } else {
-        $_SESSION['message'] = "<div class='alert alert-danger'>ไม่พบข้อมูลห้องประชุมที่เลือก</div>";
-        header("Location: booking_form.php");
-        exit;
     }
 
-    // ตรวจสอบเวลาการจอง
-    if (strtotime($time_start) >= strtotime($time_end)) {
-        $_SESSION['message'] = "<div class='alert alert-danger'>เวลาเริ่มต้นต้องน้อยกว่าเวลาสิ้นสุด</div>";
-        header("Location: booking_form.php");
-        exit;
+    // 4) INSERT ข้อมูลการจองลงในตาราง booking
+    $sql = "INSERT INTO booking (
+        Personnel_ID,
+        Date_Start,
+        Time_Start,
+        Time_End,
+        Hall_ID,
+        Equipment_ID,
+        Attendee_Count,
+        Booking_Detail,
+        Status_ID,
+        Approver_ID,
+        Topic_Name,
+        Approval_Stage,
+        Booking_File_Path,
+        File_Type,
+        File_Size,
+        Uploaded_At
+    ) VALUES (
+        :personnel_id,
+        :date_start,
+        :time_start,
+        :time_end,
+        :hall_id,
+        :equipment_id,
+        :attendee_count,
+        :booking_detail,
+        :status_id,
+        :approver_id,
+        :topic_name,
+        :approval_stage,
+        :booking_file_path,
+        :file_type,
+        :file_size,
+        :uploaded_at
+    )";
+
+    $stmt = $pdo->prepare($sql);
+    $params = [
+        ':personnel_id'             => $_SESSION['personnel_id'],
+        ':date_start'               => $date_start,          // ตรวจสอบรูปแบบวันที่
+        ':time_start'               => $time_start,
+        ':time_end'                 => $time_end,
+        ':hall_id'                  => $hall_id,
+        ':equipment_id'             => $equipment_id,
+        ':attendee_count'           => $attendees,
+        ':booking_detail'           => $booking_detail,
+        ':status_id'                => $status_id,
+        ':approver_id'              => $approver_id,
+        ':topic_name'               => $topic_name,
+        ':approval_stage'           => $approval_stage,
+        ':booking_file_path'        => $uploaded_File_Path,
+        ':file_type'                => $file_Type,
+        ':file_size'                => $file_Size,
+        ':uploaded_at'              => $uploaded_At
+    ];
+
+    try {
+        $stmt->execute($params);
+    } catch (PDOException $e) {
+        die("Error executing booking insert: " . $e->getMessage());
     }
 
-    // ตรวจสอบการจองซ้อน
-    $sql = "SELECT * FROM booking 
-            WHERE Hall_ID = ? 
-              AND Date_Start = ? 
-              AND ((Time_Start < ? AND Time_End > ?) 
-                   OR (Time_Start < ? AND Time_End > ?) 
-                   OR (Time_Start >= ? AND Time_End <= ?))";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isssssss", $hall_id, $date_start, $time_end, $time_end, $time_start, $time_start, $time_start, $time_end);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $stmt = $pdo->prepare("SELECT Telegram_ID FROM personnel WHERE Personnel_ID = :personnel_id");
+    $stmt->execute([':personnel_id' => $_SESSION['personnel_id']]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $telegram_id = $row ? $row['Telegram_ID'] : '';
 
-    if ($result->num_rows > 0) {
-        $_SESSION['message'] = "<div class='alert alert-danger'>ไม่สามารถจองห้องประชุมในช่วงเวลาที่เลือกได้</div>";
-        header("Location: booking_form.php");
-        exit;
-    }
+    error_log("Selected Hall Name: " . $selected_hall_name); // Debug: ตรวจสอบค่า hall name
 
-    // บันทึกข้อมูลการจอง
-    $sql = "INSERT INTO booking (Personnel_ID, Date_Start, Time_Start, Time_End, Hall_ID, Attendee_Count, Booking_Detail, Status_ID, Approver_ID, Topic_Name) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isssiisiis", $_SESSION['personnel_id'], $date_start, $time_start, $time_end, $hall_id, $attendees, $booking_detail, $status_id, $approver_id, $topic_name);
-    $stmt->execute();
+    $message = "มีการจองห้องประชุมใหม่:\n"
+         . "หัวข้อ: $topic_name\n"
+         . "จำนวนผู้เข้าประชุม: $attendees\n"
+         . "เริ่มเวลา: $date_start $time_start\n"
+         . "สิ้นสุดเวลา: $date_start $time_end";
+    sendTelegramMessage($telegram_id, $message, $telegramBotToken);
 
-    if ($stmt->affected_rows > 0) {
 
-        // ดึง Telegram ID ของผู้ใช้
-        $sql = "SELECT Telegram_ID FROM personnel WHERE Personnel_ID = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("i", $_SESSION['personnel_id']);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        $telegram_id = $row['Telegram_ID'];
-
-        // ตรวจสอบว่า Telegram ID ถูกต้องและไม่เป็นค่าว่าง
-        if (!empty($telegram_id)) {
-            // สร้างข้อความที่ต้องการส่งไปยัง Telegram
-            $message = "มีการจองห้องประชุมใหม่:\nหัวข้อ: $topic_name\nห้องประชุม: $hallName\nจำนวนผู้เข้าประชุม: $attendees\nเริ่มเวลา: $date_start $time_start\nสิ้นสุดเวลา: $date_start $time_end";
-            // ส่งข้อความไปยัง Telegram
-            sendTelegramMessage($telegram_id, $message, $telegramBotToken);
-        } else {
-            error_log("No Telegram ID found for Personnel_ID: " . $_SESSION['personnel_id']);
-        }
-
-        $_SESSION['message'] = "<div class='alert alert-success'>การจองห้องประชุมเสร็จสมบูรณ์</div>";
-        header("Location: booking.php");
-        exit;
-    }
-
+    $_SESSION['message'] = "<div class='alert alert-success'>การจองห้องประชุมเสร็จสมบูรณ์</div>";
+    header("Location: booking.php");
+    exit;
 }
-
 ?>
+
+
+
 
 
 
@@ -405,7 +435,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div style="font-size: 20px">เพิ่มการจองห้อง</div>
         </div>
         <div class="container-custom">
-            <form action="booking_form.php" method="POST">
+            <form action="booking_form.php" method="POST" enctype="multipart/form-data">
 
                 <!-- แสดงข้อความที่นี่ -->
                 <?php
@@ -418,7 +448,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <!-- ห้องที่เลือก (แสดงให้ดู แต่ไม่สามารถแก้ไขได้) -->
                 <div class="mb-3">
                     <label for="hall_id" class="form-label">ห้องประชุม</label>
-                    <input type="text" class="form-control" id="hall_id" value="<?php echo htmlspecialchars($selected_hall_name); ?>" readonly>
+                    <input type="text" class="form-control" id="hall_id"
+                        value="<?php echo htmlspecialchars($selected_hall_name); ?>" readonly>
                     <!-- ส่งค่า hall_id ไปยัง backend -->
                     <input type="hidden" name="hall_id" value="<?php echo $selected_hall_id; ?>">
                 </div>
@@ -432,7 +463,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <!-- จำนวนผู้เข้าประชุม -->
                 <div class="mb-3">
                     <label for="attendees" class="form-label">จำนวนผู้เข้าประชุม</label>
-                    <input type="number" id="attendees" name="attendees" class="form-control" required min="1" max="<?php echo $selected_capacity; ?>">
+                    <input type="number" id="attendees" name="attendees" class="form-control" required min="1"
+                        max="<?php echo $selected_capacity; ?>">
                     <small class="text-muted">ความจุสูงสุด: <?php echo $selected_capacity; ?> คน</small>
                 </div>
 
@@ -452,6 +484,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mb-3">
                     <label for="time_end" class="form-label">เวลาสิ้นสุด</label>
                     <input type="time" id="time_end" name="time_end" class="form-control" required>
+                </div>
+
+                <!-- เพิ่ม Input สำหรับอัปโหลดไฟล์/รูปภาพ -->
+                <div class="mb-3">
+                    <label for="booking_file" class="form-label">แนบไฟล์/รูปภาพ</label>
+                    <input type="file" id="booking_file" name="booking_file" class="form-control" accept="image/*">
                 </div>
 
                 <!-- คำอธิบายการจอง -->
@@ -485,8 +523,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     let currentDate = `${yyyy}-${mm}-${dd}`;
     document.getElementById("date_start").value = currentDate;
-
-    
     </script>
 
 

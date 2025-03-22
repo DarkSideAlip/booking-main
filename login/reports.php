@@ -514,25 +514,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div style="font-size: 20px">รายงาน</div>
         </div>
         <div class="container-custom">
-            <table id="member-table" class="table table-striped" style="width:100%">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>หัวข้อ</th>
-                        <th>ชื่อห้อง</th>
-                        <th>ชื่อผู้จอง</th>
-                        <th>วันที่และเวลา</th>
-                        <th>จำนวน</th>
-                        <th>สถานะ (Status)</th>
-                        <th>เหตุผล (Reason)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                // ดึงข้อมูลการจอง
-                $sql = "SELECT 
+            <!-- แสดงข้อความที่นี่ -->
+            <?php
+        if (isset($_SESSION['message'])) {
+            echo $_SESSION['message'];
+            unset($_SESSION['message']);
+        }
+        ?>
+            <?php
+        // ดึงข้อมูลการจอง
+        $sql = "SELECT 
                     b.Booking_ID,
                     b.Topic_Name,
+                    b.Booking_File_Path,  -- เพิ่มคอลัมน์นี้
                     h.Hall_Name,
                     CONCAT(p.First_Name, ' ', p.Last_Name) AS Booker_Name,
                     b.Date_Start,
@@ -551,11 +545,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
                 LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
                 ORDER BY b.Booking_ID DESC";
+        $result = $conn->query($sql);
 
-                $result = $conn->query($sql);
-
-                if ($result && $result->num_rows > 0):
-                    while ($row = $result->fetch_assoc()): ?>
+        // ถ้าไม่มีข้อมูลให้ซ่อนตารางโดยใช้ CSS
+        $tableStyle = "";
+        if (!($result && $result->num_rows > 0)) {
+            $tableStyle = "display: none;";
+        }
+        ?>
+            <table id="member-table" class="table table-striped" style="width:100%; <?= $tableStyle ?>">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>หัวข้อ</th>
+                        <th>ชื่อห้อง</th>
+                        <th>ชื่อผู้จอง</th>
+                        <th>วันที่และเวลา</th>
+                        <th>จำนวน</th>
+                        <th>สถานะ (Status)</th>
+                        <th>เหตุผล (Reason)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($result && $result->num_rows > 0): ?>
+                    <?php while ($row = $result->fetch_assoc()): ?>
                     <tr>
                         <td><?php echo $row['Booking_ID']; ?></td>
                         <td><?php echo htmlspecialchars($row['Topic_Name']); ?></td>
@@ -563,8 +576,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <td><?php echo htmlspecialchars($row['Booker_Name']); ?></td>
                         <td>
                             <?php echo htmlspecialchars($row['Date_Start']) . ' ' . 
-                            htmlspecialchars($row['Time_Start']) . ' - ' . 
-                            htmlspecialchars($row['Time_End']); ?>
+                                    htmlspecialchars($row['Time_Start']) . ' - ' . 
+                                    htmlspecialchars($row['Time_End']); ?>
                         </td>
                         <td><?php echo htmlspecialchars($row['Attendee_Count']); ?></td>
                         <td>
@@ -581,13 +594,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <?php endif; ?>
                         </td>
                         <td>
-                            <!-- ปุ่มรายละเอียด -->
+                            <!-- ปุ่มเปิด modal -->
                             <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal"
                                 data-bs-target="#detailModal<?php echo $row['Booking_ID']; ?>">
                                 รายละเอียด
                             </button>
 
-                            <!-- Modal รายละเอียด -->
+                            <!-- Modal แสดงรายละเอียด (เอา HTML ของตารางที่แสดงรายละเอียดมาแทรกโดยตรง) -->
                             <div class="modal fade" id="detailModal<?php echo $row['Booking_ID']; ?>" tabindex="-1"
                                 aria-labelledby="detailModalLabel<?php echo $row['Booking_ID']; ?>" aria-hidden="true">
                                 <div class="modal-dialog">
@@ -599,7 +612,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            <?php echo htmlspecialchars($row['Booking_Detail']); ?>
+                                            <?php
+                                                // สมมติว่า $row มีข้อมูลการจองของรายการนั้นอยู่แล้ว
+                                                echo "<table class='table table-bordered'>";
+                                                echo "<tr><th>หัวข้อประชุม</th><td>" . $row['Topic_Name'] . "</td></tr>";
+                                                echo "<tr><th>วันที่และเวลา</th><td>" . $row['Date_Start'] . ' ' . $row['Time_Start'] . ' - ' . $row['Time_End'] . "</td></tr>";
+                                                echo "<tr><th>จำนวนผู้เข้าประชุม</th><td>" . $row['Attendee_Count'] . ' คน ' . "</td></tr>";
+                                                echo "<tr><th>รายละเอียดการประชุม</th><td>" . $row['Booking_Detail'] . "</td></tr>";
+
+                                                if (!empty($row['Booking_File_Path'])) {
+                                                    echo "<tr><th>รูปภาพประกอบ</th>
+                                                        <td>
+                                                            <img src='" . $row['Booking_File_Path'] . "' 
+                                                                style='max-width:250px; height:auto;'
+                                                                alt='Uploaded Image'>
+                                                        </td></tr>";
+                                                } else {
+                                                    echo "<tr><th>รูปภาพประกอบ</th><td>ไม่มีไฟล์แนบ</td></tr>";
+                                                }
+                                                echo "</table>";
+                                                ?>
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary"
@@ -619,10 +651,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <i class="fas fa-check-circle"></i>
                             </button>
                             <?php endif; ?>
+                            <!-- ปุ่มลบ (ทุกระยะให้แอดมินสามารถลบได้) -->
                             <?php if ($_SESSION['role_id'] == 2): ?>
                             <a href="delete_booking.php?id=<?php echo $row['Booking_ID']; ?>"
                                 class="btn btn-outline-danger btn-sm ms-2"
-                                onclick="return confirm('คุณแน่ใจว่าต้องการลบผู้ใช้งานนี้?')">
+                                onclick="return confirm('คุณแน่ใจว่าต้องการลบรายการจองนี้?')">
                                 <i class="fas fa-trash"></i>
                             </a>
                             <?php endif; ?>
@@ -634,6 +667,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 data-bs-target="#approveRejectModal<?php echo $row['Booking_ID']; ?>">
                                 <i class="fas fa-check-circle"></i>
                             </button>
+                            <?php endif; ?>
+                            <!-- ปุ่มลบ -->
+                            <?php if ($_SESSION['role_id'] == 2): ?>
+                            <a href="delete_booking.php?id=<?php echo $row['Booking_ID']; ?>"
+                                class="btn btn-outline-danger btn-sm ms-2"
+                                onclick="return confirm('คุณแน่ใจว่าต้องการลบรายการจองนี้?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                            <?php endif; ?>
+
+                            <?php elseif ((int)$row['Status_ID'] === 4): ?>
+                            <!-- เมื่อการจองได้รับการอนุมัติแล้ว -->
+                            <!-- ปุ่มลบ -->
+                            <?php if ($_SESSION['role_id'] == 2): ?>
+                            <a href="delete_booking.php?id=<?php echo $row['Booking_ID']; ?>"
+                                class="btn btn-outline-danger btn-sm ms-2"
+                                onclick="return confirm('คุณแน่ใจว่าต้องการลบรายการจองนี้?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
                             <?php endif; ?>
                             <?php endif; ?>
 
@@ -655,7 +707,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         </div>
                                         <div class="modal-footer">
                                             <!-- ปุ่มอนุมัติระยะแรก -->
-                                            <?php if ($_SESSION['role_id'] == 4 || $_SESSION['role_id'] == 2 && $row['Status_ID'] == 1): ?>
+                                            <?php if ($_SESSION['role_id'] == 4 || ($_SESSION['role_id'] == 2 && $row['Status_ID'] == 1)): ?>
                                             <form method="POST" action="">
                                                 <input type="hidden" name="booking_id"
                                                     value="<?php echo $row['Booking_ID']; ?>">
@@ -667,7 +719,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <?php endif; ?>
 
                                             <!-- ปุ่มอนุมัติระยะสุดท้าย -->
-                                            <?php if ($_SESSION['role_id'] == 3 || $_SESSION['role_id'] == 2 && $row['Status_ID'] == 2): ?>
+                                            <?php if ($_SESSION['role_id'] == 3 || ($_SESSION['role_id'] == 2 && $row['Status_ID'] == 2)): ?>
                                             <form method="POST" action="">
                                                 <input type="hidden" name="booking_id"
                                                     value="<?php echo $row['Booking_ID']; ?>">
@@ -693,19 +745,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </div>
                                 </div>
                             </div>
-
                         </td>
                     </tr>
                     <?php endwhile; ?>
-                    <?php else: ?>
-                    <tr>
-                        <td colspan="9" class="text-center">ไม่มีข้อมูลการจอง</td>
-                    </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
+
 
     <!-- JavaScript -->
     <script src="js/bootstrap.bundle.min.js"></script>
@@ -718,6 +766,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     });
     // รีเฟรช DataTables หลังลบข้อมูล
     $('#member-table').DataTable().ajax.reload(null, false);
+
+    $('#detailModal<?php echo $row['Booking_ID']; ?>').on('shown.bs.modal', function() {
+        $("#modalBodyContent<?php echo $row['Booking_ID']; ?>").load(
+            "get_booking_detail.php?id=<?php echo $row['Booking_ID']; ?>");
+    });
     </script>
 
 </body>

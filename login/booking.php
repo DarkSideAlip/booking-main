@@ -413,7 +413,7 @@ if (isset($_GET['id'])) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form action="add_room.php" method="post">
+                    <form action="add_room.php" method="post" enctype="multipart/form-data">
                         <input type="hidden" name="hall_id" id="hall_id">
                         <div class="mb-3">
                             <label for="hall_name" class="form-label">ชื่อห้อง</label>
@@ -440,6 +440,12 @@ if (isset($_GET['id'])) {
                                 <option value="2">ปิดการใช้งาน</option>
                             </select>
                         </div>
+                        <!-- ส่วนเพิ่มการอัปโหลดรูปภาพ -->
+                        <div class="mb-3">
+                            <label for="hall_image" class="form-label">รูปห้อง</label>
+                            <input type="file" class="form-control" id="hall_image" name="hall_image" accept="image/*">
+                        </div>
+
                         <button type="submit" class="btn btn-primary">บันทึกห้อง</button>
                     </form>
                 </div>
