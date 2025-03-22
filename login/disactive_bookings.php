@@ -22,7 +22,8 @@ $sql = "SELECT
             b.Time_Start, 
             b.Time_End, 
             b.Attendee_Count, 
-            s.Status_Name 
+            b.Personnel_ID AS personnel_id,  -- เปลี่ยนเป็นตัวเล็ก
+            s.Status_Name
         FROM 
             booking b
         LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
@@ -30,6 +31,7 @@ $sql = "SELECT
         LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
         WHERE b.Status_ID = 3
         ORDER BY b.Booking_ID DESC";
+
 
 $result = $conn->query($sql);
 
@@ -44,6 +46,7 @@ $result = $conn->query($sql);
     <title>รายงาน</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/2.1.7/css/dataTables.bootstrap5.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
     @media (max-width: 991px) {
         #navbarNav {
@@ -298,12 +301,18 @@ $result = $conn->query($sql);
         <div class="container-custom">
             <div class="container mt-5">
                 <?php
-            // ตรวจสอบว่ามีข้อมูลหรือไม่ ถ้าไม่มีให้ซ่อนตารางด้วยการกำหนด style
-            $tableStyle = "";
-            if (!($result && $result->num_rows > 0)) {
-                $tableStyle = "display: none;";
-            }
-            ?>
+                    if(isset($_SESSION['message'])){
+                        echo $_SESSION['message'];
+                        unset($_SESSION['message']);
+                    }
+                ?>
+                <?php
+                    // ตรวจสอบว่ามีข้อมูลหรือไม่ ถ้าไม่มีให้ซ่อนตารางด้วยการกำหนด style
+                    $tableStyle = "";
+                    if (!($result && $result->num_rows > 0)) {
+                        $tableStyle = "display: none;";
+                    }
+                ?>
                 <table id="member-table" class="table table-striped" style="width:100%; <?= $tableStyle ?>">
                     <thead>
                         <tr>
@@ -314,6 +323,7 @@ $result = $conn->query($sql);
                             <th>วันที่และเวลา</th>
                             <th>จำนวนผู้เข้าร่วม</th>
                             <th>สถานะ</th>
+                            <th>เหตุผล</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -339,6 +349,15 @@ $result = $conn->query($sql);
                                 <span class="text-danger">ไม่อนุมัติ</span>
                                 <?php else: ?>
                                 <span class="text-muted">ไม่ทราบสถานะ</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (isset($_SESSION['personnel_id']) && $_SESSION['personnel_id'] == $row['personnel_id']): ?>
+                                <a href="delete_booking_disac.php?id=<?php echo $row['Booking_ID']; ?>"
+                                    class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('คุณแน่ใจหรือไม่ว่าจะยกเลิกการจองนี้?');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
                                 <?php endif; ?>
                             </td>
                         </tr>

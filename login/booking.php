@@ -203,10 +203,10 @@ if (isset($_GET['id'])) {
 
     .button-container {
         display: flex;
-        justify-content: flex-end; /* ทำให้ปุ่มไปอยู่ทางขวา */
+        justify-content: flex-end;
+        /* ทำให้ปุ่มไปอยู่ทางขวา */
         width: 100%;
     }
-
     </style>
 </head>
 
@@ -462,7 +462,8 @@ if (isset($_GET['id'])) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form action="edit_room.php" method="post">
+                    <!-- เพิ่ม enctype เพื่อรองรับการอัปโหลดไฟล์ -->
+                    <form action="edit_room.php" method="post" enctype="multipart/form-data">
                         <input type="hidden" name="hall_id" id="edit_hall_id">
                         <div class="mb-3">
                             <label for="edit_hall_name" class="form-label">ชื่อห้อง</label>
@@ -480,7 +481,8 @@ if (isset($_GET['id'])) {
                         </div>
                         <div class="mb-3">
                             <label for="edit_capacity" class="form-label">ความจุ</label>
-                            <input type="number" class="form-control" id="edit_capacity" name="capacity" required min="1">
+                            <input type="number" class="form-control" id="edit_capacity" name="capacity" required
+                                min="1">
                         </div>
                         <div class="mb-3">
                             <label for="edit_status_hall" class="form-label">สถานะห้อง</label>
@@ -489,12 +491,19 @@ if (isset($_GET['id'])) {
                                 <option value="2">ปิดการใช้งาน</option>
                             </select>
                         </div>
+                        <!-- เพิ่มส่วนอัปโหลดรูปภาพ -->
+                        <div class="mb-3">
+                            <label for="edit_hall_image" class="form-label">รูปห้อง (ถ้ามีการเปลี่ยนแปลง)</label>
+                            <input type="file" class="form-control" id="edit_hall_image" name="hall_image"
+                                accept="image/*">
+                        </div>
                         <button type="submit" class="btn btn-primary">บันทึกห้อง</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
 
 
 

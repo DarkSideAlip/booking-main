@@ -60,8 +60,10 @@ function approveBooking($booking_id, $approver_id, $conn, $telegramBotToken, $ap
     // กำหนดสถานะตามระยะการอนุมัติ
     if ($approval_stage == 1) {
         $status_id = 2; // อนุมัติระยะแรก
+        $notify_roles = [2, 4]; // แจ้งไปที่ แอดมิน (2) และ รองผอ (4)
     } elseif ($approval_stage == 2) {
         $status_id = 4; // อนุมัติสุดท้าย
+        $notify_roles = [2, 3]; // แจ้งไปที่ แอดมิน (2) และ ผอ (3)
     } else {
         return; // ถ้าไม่มีระยะการอนุมัติที่ระบุ, ไม่ทำการอัปเดต
     }
@@ -85,9 +87,9 @@ function approveBooking($booking_id, $approver_id, $conn, $telegramBotToken, $ap
 
     // สร้างข้อความตามระยะการอนุมัติ
     if ($approval_stage == 1) {
-        $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติเบื้องต้นแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
+        $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติจากรองผู้อำนวยการแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
     } elseif ($approval_stage == 2) {
-        $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติสุดท้ายแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
+        $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติจากผู้อำนวยการแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
     }
 
     // ส่งข้อความไปยัง Telegram
