@@ -504,27 +504,27 @@ if (isset($_GET['id'])) {
                         <input type="hidden" name="personnel_id" id="edit_personnel_id">
                         <div class="mb-3">
                             <label for="first_name" class="form-label">ชื่อ</label>
-                            <input type="text" class="form-control" id="edit_first_name" name="first_name" required>
+                            <input type="text" class="form-control" id="edit_first_name" name="first_name">
                         </div>
                         <div class="mb-3">
                             <label for="last_name" class="form-label">นามสกุล</label>
-                            <input type="text" class="form-control" id="edit_last_name" name="last_name" required>
+                            <input type="text" class="form-control" id="edit_last_name" name="last_name">
                         </div>
                         <div class="mb-3">
                             <label for="username" class="form-label">ชื่อผู้ใช้ (ห้ามซ้ำ)</label>
-                            <input type="text" class="form-control" id="edit_username" name="username" required>
+                            <input type="text" class="form-control" id="edit_username" name="username">
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label">รหัสผ่านเดิม</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            <input type="password" class="form-control" id="password" name="password">
                         </div>
                         <div class="mb-3">
                             <label for="new_password" class="form-label">รหัสผ่านใหม่</label>
-                            <input type="password" class="form-control" id="new_password" name="new_password" required>
+                            <input type="password" class="form-control" id="new_password" name="new_password">
                         </div>
                         <div class="mb-3">
                             <label for="role_id" class="form-label">สถานะ</label>
-                            <select class="form-select" id="edit_role_id" name="role_id" required>
+                            <select class="form-select" id="edit_role_id" name="role_id">
                                 <option value="1">ผู้ใช้</option>
                                 <option value="2">Admin</option>
                                 <option value="3">ผู้อนุมัติ</option>
@@ -533,7 +533,7 @@ if (isset($_GET['id'])) {
                         </div>
                         <div class="mb-3">
                             <label for="subject_group_id" class="form-label">กลุ่มสาระการเรียนรู้</label>
-                            <select name="subject_group_id" id="edit_subject_group_id" class="form-select" required>
+                            <select name="subject_group_id" id="edit_subject_group_id" class="form-select">
                                 <option value="1">กลุ่มสาระการเรียนรู้ภาษาไทย</option>
                                 <option value="2">กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม</option>
                                 <option value="3">กลุ่มสาระการเรียนรู้คณิตศาสตร์</option>
@@ -547,19 +547,19 @@ if (isset($_GET['id'])) {
                         </div>
                         <div class="mb-3">
                             <label for="phone" class="form-label">เบอร์โทรศัพท์ (ห้ามซ้ำ)</label>
-                            <input type="text" name="phone" id="edit_phone" class="form-control" required>
+                            <input type="text" name="phone" id="edit_phone" class="form-control">
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">G-mail (ห้ามซ้ำ)</label>
-                            <input type="email" name="email" class="form-control" id="edit_email" required>
+                            <input type="email" name="email" class="form-control" id="edit_email">
                         </div>
                         <div class="mb-3">
                             <label for="telegram_id" class="form-label">ID Telegram (ห้ามซ้ำ)</label>
-                            <input type="text" name="telegram_id" class="form-control" id="edit_telegram_id" required>
+                            <input type="text" name="telegram_id" class="form-control" id="edit_telegram_id">
                         </div>
                         <div class="mb-3">
                             <label for="position_id" class="form-label">บทบาท</label>
-                            <select name="position_id" class="form-select" id="edit_position_id" required>
+                            <select name="position_id" class="form-select" id="edit_position_id">
                                 <option value="1">ผู้บริหาร</option>
                                 <option value="2">ครู</option>
                                 <option value="3">บุคลากรทางการศึกษา</option>
