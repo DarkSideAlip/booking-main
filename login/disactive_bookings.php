@@ -3,16 +3,14 @@ session_start();
 
 // ตรวจสอบว่าผู้ใช้ล็อกอินหรือไม่
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    // ถ้ายังไม่ได้ล็อกอิน ให้เปลี่ยนเส้นทางไปที่หน้า index.php
     header('Location: index.php');
     exit;
 }
 
-// หากล็อกอินแล้ว จะแสดงข้อมูลห้องประชุมได้
 include 'db_connect.php';
-include 'auth_check.php'; // เรียกใช้งานการตรวจสอบการเข้าสู่ระบบและสถานะผู้ใช้
+include 'auth_check.php';
 
-// SQL สำหรับดึงเฉพาะสถานะ "รอตรวจสอบ"
+// กำหนด SQL เบื้องต้น
 $sql = "SELECT 
             b.Booking_ID, 
             b.Topic_Name, 
@@ -22,20 +20,25 @@ $sql = "SELECT
             b.Time_Start, 
             b.Time_End, 
             b.Attendee_Count, 
-            b.Personnel_ID AS personnel_id,  -- เปลี่ยนเป็นตัวเล็ก
+            b.Personnel_ID AS personnel_id,  
             s.Status_Name
         FROM 
             booking b
         LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
         LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
         LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
-        WHERE b.Status_ID = 3
-        ORDER BY b.Booking_ID DESC";
+        WHERE b.Status_ID = 3";
 
+// หากไม่ใช่แอดมิน (เช่น role_id ไม่เท่ากับ 2) ให้แสดงเฉพาะรายการของตัวเอง
+if ($_SESSION['role_id'] != 2) {
+    $sql .= " AND b.Personnel_ID = '" . $_SESSION['personnel_id'] . "'";
+}
+
+$sql .= " ORDER BY b.Booking_ID DESC";
 
 $result = $conn->query($sql);
-
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

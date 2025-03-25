@@ -510,7 +510,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- เพิ่ม Input สำหรับอัปโหลดไฟล์/รูปภาพ -->
                 <div class="mb-3">
-                    <label for="booking_file" class="form-label">แนบไฟล์/รูปภาพ</label>
+                    <label for="booking_file" class="form-label">แนบรูปแบบการจัด</label>
                     <input type="file" id="booking_file" name="booking_file" class="form-control" accept="image/*">
                 </div>
 

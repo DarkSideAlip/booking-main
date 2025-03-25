@@ -15,6 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $position_id = $_POST['position_id'];
     $subject_group_id = $_POST['subject_group_id'];
 
+    // ตรวจสอบว่า email ลงท้ายด้วย @spa.ac.th เท่านั้น
+    if (!preg_match('/@spa\.ac\.th$/', $email)) {
+        $_SESSION['message'] = "<div class='alert alert-danger'>Email ต้องลงท้ายด้วย @spa.ac.th เท่านั้น</div>";
+        header("Location: members.php");
+        exit;
+    }
+
     // สร้างเงื่อนไข SQL แบบไดนามิกสำหรับตรวจสอบข้อมูลซ้ำ
     $sql_check = "SELECT * FROM personnel WHERE ";
     $conditions = [];

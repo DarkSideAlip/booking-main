@@ -25,6 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['personnel_id'])) {
     $position_id      = $_POST['position_id']      ?? null;
     $subject_group_id = $_POST['subject_group_id'] ?? null;
 
+    // ตรวจสอบว่า email ถ้ามีการกรอกข้อมูล ต้องลงท้ายด้วย @spa.ac.th เท่านั้น
+    if (!empty($email) && !preg_match('/@spa\.ac\.th$/', $email)) {
+        $_SESSION['message'] = "<div class='alert alert-danger'>Email ต้องลงท้ายด้วย @spa.ac.th เท่านั้น</div>";
+        header('Location: members.php');
+        exit;
+    }
+
     // ถ้าเป็น self-editing (แก้ไขข้อมูลตัวเอง) ให้ดึงรหัสผ่านปัจจุบันของ record นั้นมาเพื่อตรวจสอบรหัสผ่านเก่า
     $current_hashed_password = null;
     if ($_SESSION['personnel_id'] == $update_personnel_id) {

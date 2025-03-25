@@ -51,7 +51,7 @@ $sql = "SELECT Role_ID FROM personnel WHERE Personnel_ID = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $personnel_id);
 $stmt->execute();
-$stmt->bind_result($user_role);  // เก็บ Role_ID ลงในตัวแปร $user_role
+$stmt->bind_result($user_role);
 $stmt->fetch();
 $stmt->close();
 
@@ -60,10 +60,8 @@ function approveBooking($booking_id, $approver_id, $conn, $telegramBotToken, $ap
     // กำหนดสถานะตามระยะการอนุมัติ
     if ($approval_stage == 1) {
         $status_id = 2; // อนุมัติระยะแรก
-        $notify_roles = [2, 4]; // แจ้งไปที่ แอดมิน (2) และ รองผอ (4)
     } elseif ($approval_stage == 2) {
         $status_id = 4; // อนุมัติสุดท้าย
-        $notify_roles = [2, 3]; // แจ้งไปที่ แอดมิน (2) และ ผอ (3)
     } else {
         return; // ถ้าไม่มีระยะการอนุมัติที่ระบุ, ไม่ทำการอัปเดต
     }
@@ -74,7 +72,7 @@ function approveBooking($booking_id, $approver_id, $conn, $telegramBotToken, $ap
     $stmt->bind_param("iiii", $status_id, $approver_id, $approval_stage, $booking_id);
     $stmt->execute();
 
-    // ดึงข้อมูลผู้ใช้และห้องประชุม
+    // ดึงข้อมูลผู้จองจาก personnel โดยใช้ Personnel_ID ที่อยู่ใน booking
     $sql = "SELECT p.Telegram_ID, h.Hall_Name, b.Topic_Name FROM booking b
             LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
             LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
@@ -85,14 +83,20 @@ function approveBooking($booking_id, $approver_id, $conn, $telegramBotToken, $ap
     $stmt->bind_result($telegram_id, $hall_name, $topic_name);
     $stmt->fetch();
 
-    // สร้างข้อความตามระยะการอนุมัติ
+    // ตรวจสอบว่า Telegram_ID มีค่า
+    if (empty($telegram_id)) {
+        error_log("ไม่มี Telegram_ID สำหรับ Booking_ID: $booking_id");
+        return;
+    }
+
+    // สร้างข้อความแจ้งเตือน
     if ($approval_stage == 1) {
         $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติจากรองผู้อำนวยการแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
     } elseif ($approval_stage == 2) {
         $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติจากผู้อำนวยการแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
     }
 
-    // ส่งข้อความไปยัง Telegram
+    // ส่งข้อความไปยัง Telegram ให้กับผู้จองเท่านั้น
     sendTelegramMessage($telegram_id, $message, $telegramBotToken);
 }
 
@@ -104,7 +108,7 @@ function rejectBooking($booking_id, $approver_id, $conn, $telegramBotToken) {
     $stmt->bind_param("ii", $approver_id, $booking_id);
     $stmt->execute();
 
-    // ดึงข้อมูลผู้ใช้และห้องประชุม
+    // ดึงข้อมูลผู้จองจาก personnel โดยใช้ Personnel_ID ที่อยู่ใน booking
     $sql = "SELECT p.Telegram_ID, h.Hall_Name, b.Topic_Name FROM booking b
             LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
             LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
@@ -115,13 +119,19 @@ function rejectBooking($booking_id, $approver_id, $conn, $telegramBotToken) {
     $stmt->bind_result($telegram_id, $hall_name, $topic_name);
     $stmt->fetch();
 
-    // ส่งข้อความไปยัง Telegram ว่าไม่อนุมัติแล้ว
+    // ตรวจสอบว่า Telegram_ID มีค่า
+    if (empty($telegram_id)) {
+        error_log("ไม่มี Telegram_ID สำหรับ Booking_ID: $booking_id");
+        return;
+    }
+
+    // สร้างข้อความแจ้งเตือนการไม่อนุมัติ
     $message = "การจองห้องประชุมหมายเลข $booking_id ไม่ได้รับการอนุมัติ\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
     sendTelegramMessage($telegram_id, $message, $telegramBotToken);
 }
 
 // ตรวจสอบการเข้าสู่ระบบและ Role_ID ของผู้ใช้
-$user_role = $_SESSION['role_id']; // ค่า Role_ID ของผู้ใช้งานจากการเข้าสู่ระบบ
+$user_role = $_SESSION['role_id'];
 
 // กำหนด SQL query ตาม Role_ID
 if ($user_role == 2) { // Admin
@@ -143,7 +153,7 @@ if ($user_role == 2) { // Admin
             LEFT JOIN booking_status s ON b.Status_ID = s.Status_ID
             LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
             ORDER BY b.Booking_ID DESC";
-} elseif ($user_role == 3) { // ผู้อนุมัติ (สามารถดูเฉพาะอนุมัติระยะแรก)
+} elseif ($user_role == 3) { // ผู้อนุมัติ (ดูเฉพาะอนุมัติระยะแรก)
     $sql = "SELECT 
                 b.Booking_ID,
                 b.Topic_Name,
@@ -163,7 +173,7 @@ if ($user_role == 2) { // Admin
             LEFT JOIN personnel a ON b.Approver_ID = a.Personnel_ID
             WHERE s.Status_ID = 2  -- เฉพาะอนุมัติระยะแรก
             ORDER BY b.Booking_ID DESC";
-} elseif ($user_role == 4) { // รอง (สามารถดูเฉพาะอนุมัติระยะแรก)
+} elseif ($user_role == 4) { // รอง (ดูเฉพาะรอตรวจสอบ)
     $sql = "SELECT 
                 b.Booking_ID,
                 b.Topic_Name,
@@ -207,11 +217,9 @@ if ($user_role == 2) { // Admin
 
 // ดึงข้อมูลการจอง
 $result = $conn->query($sql);
-
 if (!$result) {
     die("Error retrieving data: " . $conn->error);
 }
-
 
 // เมื่อผู้ใช้คลิกอนุมัติหรือไม่อนุมัติ
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -220,16 +228,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $approval_stage = $_POST['approval_stage'];  // รับค่าระยะการอนุมัติ
         approveBooking($booking_id, $_SESSION['personnel_id'], $conn, $telegramBotToken, $approval_stage);
     }
-
     if (isset($_POST['reject'])) {
         $booking_id = $_POST['booking_id'];
         rejectBooking($booking_id, $_SESSION['personnel_id'], $conn, $telegramBotToken);
     }
 }
-
-
-
 ?>
+
 
 
 <!DOCTYPE html>
@@ -571,6 +576,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <tbody>
                     <?php if ($result && $result->num_rows > 0): ?>
                     <?php while ($row = $result->fetch_assoc()): ?>
+                    <?php 
+                        // ถ้า role เป็น 3 หรือ 4 และสถานะของรายการเป็น 3 (ไม่อนุมัติ) หรือ 4 (อนุมัติแล้ว)
+                        // ให้ข้ามรายการนั้นไปโดยไม่แสดง
+                        if (($_SESSION['role_id'] == 3 || $_SESSION['role_id'] == 4) && 
+                            ($row['Status_ID'] == 3 || $row['Status_ID'] == 4)) {
+                            continue;
+                        }
+                        ?>
                     <tr>
                         <td><?php echo $row['Booking_ID']; ?></td>
                         <td><?php echo htmlspecialchars($row['Topic_Name']); ?></td>
@@ -622,18 +635,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 echo "<tr><th>จำนวนผู้เข้าประชุม</th><td>" . $row['Attendee_Count'] . ' คน ' . "</td></tr>";
                                                 echo "<tr><th>รายละเอียดการประชุม</th><td>" . $row['Booking_Detail'] . "</td></tr>";
 
+                                                
                                                 if (!empty($row['Booking_File_Path'])) {
-                                                    echo "<tr><th>รูปภาพประกอบ</th>
-                                                        <td>
-                                                            <img src='" . $row['Booking_File_Path'] . "' 
-                                                                style='max-width:250px; height:auto;'
-                                                                alt='Uploaded Image'>
-                                                        </td></tr>";
+                                                    echo "<tr>
+                                                            <th>รูปที่อัปโหลด</th>
+                                                            <td>
+                                                                <img id='bookingImage' src='" . $row['Booking_File_Path'] . "' 
+                                                                    style='max-width:250px; height:auto; cursor:pointer;'
+                                                                    alt='Uploaded Image'>
+                                                            </td>
+                                                        </tr>";
                                                 } else {
-                                                    echo "<tr><th>รูปภาพประกอบ</th><td>ไม่มีไฟล์แนบ</td></tr>";
+                                                    echo "<tr><th>รูปที่อัปโหลด</th><td>ไม่มีไฟล์แนบ</td></tr>";
                                                 }
+
+
                                                 echo "</table>";
                                                 ?>
+                                        </div>
+                                        <!-- Modal สำหรับแสดงรูปภาพขยายใหญ่ -->
+                                        <div class="modal fade" id="imageModal" tabindex="-1"
+                                            aria-labelledby="imageModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-body p-0">
+                                                        <img id="modalImage" src="" class="img-fluid w-100"
+                                                            alt="Enlarged Uploaded Image">
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary"
@@ -661,7 +691,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <i class="fas fa-trash"></i>
                             </a>
                             <?php endif; ?>
-
                             <?php elseif ((int)$row['Status_ID'] === 2): ?>
                             <!-- ปุ่มอนุมัติระยะสุดท้าย -->
                             <?php if ($_SESSION['role_id'] == 2 || $_SESSION['role_id'] == 3): ?>
@@ -678,7 +707,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <i class="fas fa-trash"></i>
                             </a>
                             <?php endif; ?>
-
+                            <?php elseif ((int)$row['Status_ID'] === 3): ?>
+                            <!-- ไม่อนุมัติ -->
+                            <?php if ($_SESSION['role_id'] == 2 || $_SESSION['role_id'] == 3 || $_SESSION['role_id'] == 4): ?>
+                            <!-- เมื่อการจองไม่ได้รับการอนุมัติ -->
+                            <?php endif; ?>
+                            <!-- ปุ่มลบ -->
+                            <?php if ($_SESSION['role_id'] == 2): ?>
+                            <a href="delete_booking.php?id=<?php echo $row['Booking_ID']; ?>"
+                                class="btn btn-outline-danger btn-sm ms-2"
+                                onclick="return confirm('คุณแน่ใจว่าต้องการลบรายการจองนี้?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                            <?php endif; ?>
                             <?php elseif ((int)$row['Status_ID'] === 4): ?>
                             <!-- เมื่อการจองได้รับการอนุมัติแล้ว -->
                             <!-- ปุ่มลบ -->
@@ -756,6 +797,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
+    <!-- Modal สำหรับแสดงรูปภาพขยายใหญ่ (วางไว้ภายนอก loop ของตาราง) -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-body p-0">
+                    <img id="modalImage" src="" class="img-fluid w-100" alt="Enlarged Uploaded Image">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 
     <!-- JavaScript -->
     <script src="js/bootstrap.bundle.min.js"></script>
@@ -772,6 +825,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $('#detailModal<?php echo $row['Booking_ID']; ?>').on('shown.bs.modal', function() {
         $("#modalBodyContent<?php echo $row['Booking_ID']; ?>").load(
             "get_booking_detail.php?id=<?php echo $row['Booking_ID']; ?>");
+    });
+
+    // แนบ event listener ให้กับทุก element ที่มี class "bookingImage"
+    document.querySelectorAll('.bookingImage').forEach(function(img) {
+        img.addEventListener('click', function() {
+            var modalImage = document.getElementById('modalImage');
+            modalImage.src = this.src; // กำหนด src ให้กับภาพใน modal
+            var imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+            imageModal.show();
+        });
     });
     </script>
 

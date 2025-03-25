@@ -25,10 +25,10 @@ if (isset($_GET['id'])) {
             echo "<tr>
                     <th>รูปห้อง</th>
                     <td>
-                        <img src='" . $hall['Hall_Image'] . "' 
+                        <img id='hallImage' src='" . $hall['Hall_Image'] . "' 
                              alt='Hall Image' 
                              class='img-fluid' 
-                             style='max-width:250px;'>
+                             style='max-width:250px;cursor:pointer;'>
                     </td>
                   </tr>";
         } else {
@@ -44,4 +44,26 @@ if (isset($_GET['id'])) {
     echo "ไม่พบข้อมูล";
 }
 ?>
+
+<!-- Modal สำหรับแสดงรูปภาพขยายใหญ่ -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-body p-0">
+        <img id="modalImage" src="" class="img-fluid w-100" alt="Enlarged Hall Image">
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// เมื่อคลิกที่รูปภาพในตาราง
+document.getElementById('hallImage').addEventListener('click', function(){
+    var modalImage = document.getElementById('modalImage');
+    modalImage.src = this.src; // กำหนด src ของรูปใน modal ให้เท่ากับรูปที่คลิก
+    var imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+    imageModal.show();
+});
+</script>
 

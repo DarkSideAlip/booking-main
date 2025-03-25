@@ -703,11 +703,6 @@ $room_dot_color = isset($rooms[0]['Dot_Color']) ? $rooms[0]['Dot_Color'] : '#ccc
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-    // แสดง Modal เมื่อหน้าเว็บโหลด
-    window.onload = function() {
-        var alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
-        alertModal.show();
-    };
 
     // ชื่อเดือนภาษาไทย
     const monthNames = [
