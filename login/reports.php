@@ -458,9 +458,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     .dropdown-menu .dropdown-item:hover {
-        background-color: #495057;
+        background-color: #e0a444;
         color: #ffffff;
     }
+
+    .btn-outline-custom {
+        color: #010f33; /* สีข้อความ */
+        border-color: #010f33; /* สีขอบ */
+    }
+
+    .btn-outline-custom:hover {
+        background-color: #010f33; /* สีพื้นหลังเมื่อ hover */
+        color: #fff; /* สีข้อความเมื่อ hover */
+    }
+
     </style>
 </head>
 

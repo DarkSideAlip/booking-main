@@ -305,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     .dropdown-menu .dropdown-item:hover {
-        background-color: #495057;
+        background-color: #e0a444;
         color: #ffffff;
     }
 

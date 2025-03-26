@@ -159,6 +159,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         max-width: 360px;
         margin-bottom: 15px;
     }
+
+    .btn-outline-custom {
+        color: #010f33; /* สีข้อความ */
+        border-color: #010f33; /* สีขอบ */
+    }
+
+    .btn-outline-custom:hover {
+        background-color: #010f33; /* สีพื้นหลังเมื่อ hover */
+        color: #fff; /* สีข้อความเมื่อ hover */
+    }
     </style>
 </head>
 
@@ -280,7 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <input type="checkbox" class="form-check-input" id="remember" name="remember">
                         <label for="remember" class="form-check-label">จำการเข้าระบบ</label>
                     </div>
-                    <button type="submit" class="btn btn-outline-dark mt-3">
+                    <button type="submit" class="btn btn-outline-custom mt-3">
                         <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ
                     </button>
                 </form>

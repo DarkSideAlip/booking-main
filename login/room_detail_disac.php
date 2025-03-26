@@ -34,12 +34,7 @@ if (isset($_GET['id'])) {
         </tr>
         <tr>
             <th>รายละเอียดการจอง</th>
-            <td style="white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;">
-                <?php 
-                    // ใช้ nl2br เพื่อขึ้นบรรทัดใหม่ตามข้อความในฐานข้อมูล
-                    echo (htmlspecialchars($booking['Booking_Detail'])); 
-                ?>
-            </td>
+            <td style="white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;"><?php echo (htmlspecialchars($booking['Booking_Detail'])); ?></td>
         </tr>
         <?php if (!empty($booking['Booking_File_Path'])): ?>
         <tr>

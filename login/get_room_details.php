@@ -13,7 +13,7 @@ if (isset($_GET['id'])) {
     $hall = $result->fetch_assoc();
 
     if ($hall) {
-        echo "<table class='table table-bordered'>";
+        echo "<table class='table table-striped table-bordered' style='margin-bottom: 20px; table-layout: auto; width: 100%;'>";
         echo "<tr><th>ชื่อห้อง</th><td>" . $hall['Hall_Name'] . "</td></tr>";
         echo "<tr><th>รายละเอียด</th><td>" . $hall['Hall_Detail'] . "</td></tr>";
         echo "<tr><th>ขนาดห้อง</th><td>" . $hall['Hall_Size'] . "</td></tr>";

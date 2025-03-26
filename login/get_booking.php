@@ -48,7 +48,7 @@ if ($result && $result->num_rows > 0) {
         
         // กำหนดรายละเอียดเพิ่มเติม
         // เช่น "Topic_Name - Booking_Detail (Attendee_Count คน)"
-        $detailsText = "{$row['Topic_Name']} - {$row['Booking_Detail']} ({$row['Attendee_Count']} คน)";
+        $detailsText = $row['Booking_Detail'];
 
         // ดึงสีจากคอลัมน์ Dot-Color (ใช้ bracket notation เพราะชื่อคอลัมน์มีเครื่องหมาย -)
         $color = $row['DotColor'];

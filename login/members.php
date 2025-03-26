@@ -197,7 +197,7 @@ if (isset($_GET['id'])) {
     }
 
     .dropdown-menu .dropdown-item:hover {
-        background-color: #495057;
+        background-color: #e0a444;
         color: #ffffff;
     }
 
