@@ -19,32 +19,32 @@ if (isset($_GET['id'])) {
         ?>
 
     <!-- เริ่มแสดงผลในรูปแบบ HTML (ตาราง) -->
-    <table class="table table-bordered" style="width:100%;">
+    <table  class="table table-striped table-bordered" style="margin-bottom: 20px; table-layout: auto; width: 100%;">
         <tr>
             <th style="width: 50%;">หัวข้อ</th>
-            <td><?php echo htmlspecialchars($booking['Topic_Name']); ?></td>
+            <td style="white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;"><?php echo htmlspecialchars($booking['Topic_Name']); ?></td>
         </tr>
         <tr>
             <th>วันที่</th>
-            <td><?php echo htmlspecialchars($booking['Date_Start']); ?></td>
+            <td style="white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;"><?php echo htmlspecialchars($booking['Date_Start']); ?></td>
         </tr>
         <tr>
             <th>จำนวนผู้เข้าร่วม</th>
-            <td><?php echo htmlspecialchars($booking['Attendee_Count']); ?></td>
+            <td style="white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;"><?php echo htmlspecialchars($booking['Attendee_Count']); ?></td>
         </tr>
         <tr>
             <th>รายละเอียดการจอง</th>
-            <td>
+            <td style="white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;">
                 <?php 
-                        // ใช้ nl2br เพื่อขึ้นบรรทัดใหม่ตามข้อความในฐานข้อมูล
-                        echo nl2br(htmlspecialchars($booking['Booking_Detail'])); 
-                        ?>
+                    // ใช้ nl2br เพื่อขึ้นบรรทัดใหม่ตามข้อความในฐานข้อมูล
+                    echo (htmlspecialchars($booking['Booking_Detail'])); 
+                ?>
             </td>
         </tr>
         <?php if (!empty($booking['Booking_File_Path'])): ?>
         <tr>
             <th>รูปภาพประกอบ</th>
-            <td>
+            <td style="white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;">
                 <img id="hallImage" src="<?php echo htmlspecialchars($booking['Booking_File_Path']); ?>" alt="Hall Image" class="img-fluid"
                     style="max-width: 250px; height: auto;">
             </td>
@@ -52,7 +52,7 @@ if (isset($_GET['id'])) {
         <?php else: ?>
         <tr>
             <th>รูปภาพประกอบ</th>
-            <td>ไม่มีรูปภาพประกอบ</td>
+            <td style="white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;">ไม่มีรูปภาพประกอบ</td>
         </tr>
         <?php endif; ?>
     </table>

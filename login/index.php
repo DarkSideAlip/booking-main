@@ -24,13 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['username'] = $username;
             $_SESSION['role_id'] = $user['Role_ID'];
 
-            // ตรวจสอบว่าเลือก "จำการเข้าสู่ระบบ" หรือไม่
             if (isset($_POST['remember'])) {
-                // เก็บ cookie สำหรับจดจำผู้ใช้
-                setcookie('personnel_id', $user['Personnel_ID'], time() + (86400 * 30), "/");
-                setcookie('username', $username, time() + (86400 * 30), "/"); // เก็บ cookie 30 วัน
-                setcookie('role_id', $user['Role_ID'], time() + (86400 * 30), "/");
-            }
+                // เก็บ cookie สำหรับจดจำผู้ใช้เป็นเวลา 10 ปี (3650 วัน)
+                setcookie('personnel_id', $user['Personnel_ID'], time() + (86400 * 3650), "/");
+                setcookie('username', $username, time() + (86400 * 3650), "/");
+                setcookie('role_id', $user['Role_ID'], time() + (86400 * 3650), "/");
+            }         
 
             // เปลี่ยนเส้นทางไปยังหน้าหลัก
             header('Location: main.php');

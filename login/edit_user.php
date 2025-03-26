@@ -32,18 +32,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['personnel_id'])) {
         exit;
     }
 
-    // ถ้าเป็น self-editing (แก้ไขข้อมูลตัวเอง) ให้ดึงรหัสผ่านปัจจุบันของ record นั้นมาเพื่อตรวจสอบรหัสผ่านเก่า
-    $current_hashed_password = null;
-    if ($_SESSION['personnel_id'] == $update_personnel_id) {
-        $sql = "SELECT password FROM personnel WHERE personnel_id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("i", $update_personnel_id);
-        $stmt->execute();
-        $stmt->bind_result($current_hashed_password);
-        $stmt->fetch();
-        $stmt->close();
-    }
-    
     // ตรวจสอบข้อมูลซ้ำเฉพาะกรณีที่มีการกรอกค่า (ไม่ใช่ค่าว่าง)
     $dupConditions = [];
     $dupParams = [];
@@ -135,18 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['personnel_id'])) {
         $types .= "i";
     }
     
-    // สำหรับรหัสผ่าน: หากมีการกรอกรหัสผ่านใหม่ ให้ตรวจสอบรหัสผ่านเก่า (กรณี self-editing) แล้วอัปเดตรหัสผ่านใหม่
+    // สำหรับรหัสผ่าน: หากมีการกรอกรหัสผ่านใหม่ ให้ทำการ hash แล้วเพิ่มลงในรายการ update
+    // ไม่ต้องตรวจสอบรหัสผ่านเก่า
     if (isset($_POST['new_password']) && !empty($_POST['new_password'])) {
-        // ถ้าเป็น self-editing ให้ตรวจสอบรหัสผ่านเก่า
-        if ($_SESSION['personnel_id'] == $update_personnel_id) {
-            $old_password = $_POST['password'] ?? "";
-            if (empty($old_password) || !password_verify($old_password, $current_hashed_password)) {
-                $_SESSION['message'] = "<div class='alert alert-danger'>รหัสผ่านเก่าไม่ถูกต้อง!</div>";
-                header('Location: members.php');
-                exit;
-            }
-        }
-        // ทำการ hash รหัสผ่านใหม่แล้วเพิ่มลงในรายการ update
         $new_hashed_password = password_hash($_POST['new_password'], PASSWORD_DEFAULT);
         $fields[] = "password = ?";
         $params[] = $new_hashed_password;

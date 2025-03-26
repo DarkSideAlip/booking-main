@@ -83,14 +83,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['hall_id'])) {
             exit;
         }
         $update_image = true;
+
+        // ตัวเลือก: หากต้องการลบรูปเก่าออกจากเซิร์ฟเวอร์ สามารถเปิดใช้งานส่วนนี้ได้
+        /*
+        if (file_exists($old_hall_image)) {
+            unlink($old_hall_image);
+        }
+        */
     }
 
     // เตรียมคำสั่งอัปเดตข้อมูลห้องประชุม
     if ($update_image) {
         // หากมีการอัปโหลดรูปใหม่ ให้แก้ไขคอลัมน์ Hall_Image ด้วย
         $sql_update = "UPDATE hall SET Hall_Name = ?, Hall_Detail = ?, Hall_Size = ?, Capacity = ?, Status_Hall = ?, Hall_Image = ? WHERE Hall_ID = ?";
+        // เปลี่ยน type specifier ของ $status_hall เป็น i (integer) แทน s
         $stmt_update = $conn->prepare($sql_update);
-        $stmt_update->bind_param("sssissi", $hall_name, $hall_detail, $hall_size, $capacity, $status_hall, $uploadPath, $hall_id);
+        $stmt_update->bind_param("sssiisi", $hall_name, $hall_detail, $hall_size, $capacity, $status_hall, $uploadPath, $hall_id);
     } else {
         // หากไม่มีการอัปโหลดรูปใหม่ ให้คงค่า Hall_Image เดิมไว้
         $sql_update = "UPDATE hall SET Hall_Name = ?, Hall_Detail = ?, Hall_Size = ?, Capacity = ?, Status_Hall = ? WHERE Hall_ID = ?";

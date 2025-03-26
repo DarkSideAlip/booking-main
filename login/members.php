@@ -515,10 +515,6 @@ if (isset($_GET['id'])) {
                             <input type="text" class="form-control" id="edit_username" name="username">
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">รหัสผ่านเดิม</label>
-                            <input type="password" class="form-control" id="password" name="password">
-                        </div>
-                        <div class="mb-3">
                             <label for="new_password" class="form-label">รหัสผ่านใหม่</label>
                             <input type="password" class="form-control" id="new_password" name="new_password">
                         </div>

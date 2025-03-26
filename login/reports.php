@@ -55,11 +55,42 @@ $stmt->bind_result($user_role);
 $stmt->fetch();
 $stmt->close();
 
+// ฟังก์ชันดึง Telegram_ID จาก Personnel_ID
+function getTelegramIdByPersonnelId($personnel_id, $conn) {
+    $sql = "SELECT Telegram_ID FROM personnel WHERE Personnel_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $personnel_id);
+    $stmt->execute();
+    $stmt->bind_result($telegram_id);
+    $stmt->fetch();
+    $stmt->close();
+    return $telegram_id;
+}
+
+// ฟังก์ชันส่งข้อความไปยังผู้ใช้ตาม Role ที่ระบุ
+function sendToRoles($roles, $message, $conn, $telegramBotToken) {
+    // สร้าง SQL query เพื่อดึง Telegram_ID ของผู้ใช้ที่มี Role_ID ในรายการ $roles
+    $role_placeholders = implode(',', array_fill(0, count($roles), '?'));
+    $sql = "SELECT Telegram_ID FROM personnel WHERE Role_ID IN ($role_placeholders) AND Telegram_ID IS NOT NULL";
+    $stmt = $conn->prepare($sql);
+    
+    // สร้าง dynamic types string สำหรับ bind_param (ในที่นี้เป็น integer ทั้งหมด)
+    $types = str_repeat("i", count($roles));
+    $stmt->bind_param($types, ...$roles);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $telegram_id = $row['Telegram_ID'];
+        sendTelegramMessage($telegram_id, $message, $telegramBotToken);
+    }
+    $stmt->close();
+}
+
 // ฟังก์ชันการอนุมัติ
 function approveBooking($booking_id, $approver_id, $conn, $telegramBotToken, $approval_stage) {
     // กำหนดสถานะตามระยะการอนุมัติ
     if ($approval_stage == 1) {
-        $status_id = 2; // อนุมัติระยะแรก
+        $status_id = 2; // อนุมัติระยะแรก (รอดำเนินการ)
     } elseif ($approval_stage == 2) {
         $status_id = 4; // อนุมัติสุดท้าย
     } else {
@@ -71,33 +102,36 @@ function approveBooking($booking_id, $approver_id, $conn, $telegramBotToken, $ap
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("iiii", $status_id, $approver_id, $approval_stage, $booking_id);
     $stmt->execute();
+    $stmt->close();
 
-    // ดึงข้อมูลผู้จองจาก personnel โดยใช้ Personnel_ID ที่อยู่ใน booking
-    $sql = "SELECT p.Telegram_ID, h.Hall_Name, b.Topic_Name FROM booking b
-            LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+    // ดึงข้อมูลรายละเอียดของการจอง (เช่น หัวข้อ, ห้องประชุม และ Personnel_ID ของผู้จอง)
+    $sql = "SELECT h.Hall_Name, b.Topic_Name, b.Personnel_ID FROM booking b
             LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
             WHERE b.Booking_ID = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $booking_id);
     $stmt->execute();
-    $stmt->bind_result($telegram_id, $hall_name, $topic_name);
+    $stmt->bind_result($hall_name, $topic_name, $booker_personnel_id);
     $stmt->fetch();
+    $stmt->close();
 
-    // ตรวจสอบว่า Telegram_ID มีค่า
-    if (empty($telegram_id)) {
-        error_log("ไม่มี Telegram_ID สำหรับ Booking_ID: $booking_id");
-        return;
-    }
-
-    // สร้างข้อความแจ้งเตือน
+    // กำหนดข้อความแจ้งเตือนตามระยะการอนุมัติ
     if ($approval_stage == 1) {
         $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติจากรองผู้อำนวยการแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
+        // ส่งข้อความแจ้งเตือนไปยังผู้ใช้ที่มี Role_ID 2 และ 3 (ผู้ดูแลและผู้อนุมัติในรอบแรก)
+        sendToRoles([2, 3], $message, $conn, $telegramBotToken);
     } elseif ($approval_stage == 2) {
         $message = "การจองห้องประชุมหมายเลข $booking_id ได้รับการอนุมัติจากผู้อำนวยการแล้ว\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
+        // ส่งข้อความแจ้งเตือนไปยังผู้ใช้ที่มี Role_ID 2 และ 4 (ผู้ดูแลและผู้อนุมัติรอบสุดท้าย)
+        sendToRoles([2, 4], $message, $conn, $telegramBotToken);
+        // หลังจากอนุมัติสุดท้ายแล้ว ให้ส่งแจ้งเตือนไปยังผู้จองด้วย
+        $telegram_id = getTelegramIdByPersonnelId($booker_personnel_id, $conn);
+        if (!empty($telegram_id)) {
+            sendTelegramMessage($telegram_id, $message, $telegramBotToken);
+        } else {
+            error_log("ไม่มี Telegram_ID สำหรับผู้จอง (Personnel_ID: $booker_personnel_id)");
+        }
     }
-
-    // ส่งข้อความไปยัง Telegram ให้กับผู้จองเท่านั้น
-    sendTelegramMessage($telegram_id, $message, $telegramBotToken);
 }
 
 // ฟังก์ชันการไม่อนุมัติ
@@ -107,27 +141,28 @@ function rejectBooking($booking_id, $approver_id, $conn, $telegramBotToken) {
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ii", $approver_id, $booking_id);
     $stmt->execute();
+    $stmt->close();
 
-    // ดึงข้อมูลผู้จองจาก personnel โดยใช้ Personnel_ID ที่อยู่ใน booking
-    $sql = "SELECT p.Telegram_ID, h.Hall_Name, b.Topic_Name FROM booking b
-            LEFT JOIN personnel p ON b.Personnel_ID = p.Personnel_ID
+    // ดึงข้อมูลรายละเอียดของการจอง
+    $sql = "SELECT h.Hall_Name, b.Topic_Name, b.Personnel_ID FROM booking b
             LEFT JOIN hall h ON b.Hall_ID = h.Hall_ID
             WHERE b.Booking_ID = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $booking_id);
     $stmt->execute();
-    $stmt->bind_result($telegram_id, $hall_name, $topic_name);
+    $stmt->bind_result($hall_name, $topic_name, $booker_personnel_id);
     $stmt->fetch();
-
-    // ตรวจสอบว่า Telegram_ID มีค่า
-    if (empty($telegram_id)) {
-        error_log("ไม่มี Telegram_ID สำหรับ Booking_ID: $booking_id");
-        return;
-    }
+    $stmt->close();
 
     // สร้างข้อความแจ้งเตือนการไม่อนุมัติ
     $message = "การจองห้องประชุมหมายเลข $booking_id ไม่ได้รับการอนุมัติ\nหัวข้อ: $topic_name\nห้องประชุม: $hall_name";
-    sendTelegramMessage($telegram_id, $message, $telegramBotToken);
+    // ส่งข้อความแจ้งเตือนไปยังผู้จอง
+    $telegram_id = getTelegramIdByPersonnelId($booker_personnel_id, $conn);
+    if (!empty($telegram_id)) {
+        sendTelegramMessage($telegram_id, $message, $telegramBotToken);
+    } else {
+        error_log("ไม่มี Telegram_ID สำหรับผู้จอง (Personnel_ID: $booker_personnel_id)");
+    }
 }
 
 // ตรวจสอบการเข้าสู่ระบบและ Role_ID ของผู้ใช้
@@ -234,6 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
 
 
 
