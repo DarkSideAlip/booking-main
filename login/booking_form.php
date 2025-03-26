@@ -208,20 +208,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die("Error executing booking insert: " . $e->getMessage());
     }
 
-    $stmt = $pdo->prepare("SELECT Telegram_ID FROM personnel WHERE Personnel_ID = :personnel_id");
-    $stmt->execute([':personnel_id' => $_SESSION['personnel_id']]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $telegram_id = $row ? $row['Telegram_ID'] : '';
+    // ดึงข้อมูล Telegram_ID ของผู้ที่มี role_id = 2 หรือ role_id = 4
+    $stmt = $pdo->prepare("SELECT Telegram_ID FROM personnel WHERE role_id IN (2,4)");
+    $stmt->execute();
+    $telegramRecipients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     error_log("Selected Hall Name: " . $selected_hall_name); // Debug: ตรวจสอบค่า hall name
 
     $message = "มีการจองห้องประชุมใหม่:\n"
-         . "หัวข้อ: $topic_name\n"
-         . "จำนวนผู้เข้าประชุม: $attendees\n"
-         . "เริ่มเวลา: $date_start $time_start\n"
-         . "สิ้นสุดเวลา: $date_start $time_end";
-    sendTelegramMessage($telegram_id, $message, $telegramBotToken);
+        . "หัวข้อ: $topic_name\n"
+        . "จำนวนผู้เข้าประชุม: $attendees\n"
+        . "เริ่มเวลา: $date_start $time_start\n"
+        . "สิ้นสุดเวลา: $date_start $time_end";
 
+    // ส่งข้อความไปยังแต่ละ Telegram_ID
+    foreach ($telegramRecipients as $recipient) {
+        $telegram_id = $recipient['Telegram_ID'];
+        sendTelegramMessage($telegram_id, $message, $telegramBotToken);
+    }
 
     $_SESSION['message'] = "<div class='alert alert-success'>การจองห้องประชุมเสร็จสมบูรณ์</div>";
     header("Location: booking.php");
@@ -302,7 +306,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* Dropdown menu styling */
     .nav-item .dropdown-menu {
-        background-color: #343a40;
+        background-color: rgb(1, 20, 69);
         color: #ffffff;
     }
 
@@ -366,7 +370,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark p-3" style="background-color: #010f33;">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -453,7 +457,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </nav>
 
     <div class="full-height">
-        <div class="text-center bg-dark">
+        <div class="text-center" style="background-color: #010f33;">
             <div style="font-size: 20px">เพิ่มการจองห้อง</div>
         </div>
         <div class="container-custom">

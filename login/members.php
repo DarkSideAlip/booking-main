@@ -188,7 +188,7 @@ if (isset($_GET['id'])) {
 
     /* Dropdown menu styling */
     .nav-item .dropdown-menu {
-        background-color: #343a40;
+        background-color: rgb(1, 20, 69);
         color: #ffffff;
     }
 
@@ -216,7 +216,7 @@ if (isset($_GET['id'])) {
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark p-3" style="background-color: #010f33;">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -305,7 +305,7 @@ if (isset($_GET['id'])) {
 
 
     <div class="full-height">
-        <div class="text-center bg-dark">
+        <div class="text-center" style="background-color: #010f33;">
             <div style="font-size: 20px; width: 100%; text-align: left;">รายการสมาชิก</div>
             <div class="button-container">
                 <button class="add-user btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#addUserModal">
@@ -465,7 +465,7 @@ if (isset($_GET['id'])) {
                         </div>
                         <div class="mb-3">
                             <label for="phone" class="form-label">เบอร์โทรศัพท์ (ห้ามซ้ำ)</label>
-                            <input type="text" name="phone" id="phone" class="form-control">
+                            <input type="number" name="phone" id="phone" class="form-control">
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">G-mail (ห้ามซ้ำ)</label>
@@ -473,7 +473,7 @@ if (isset($_GET['id'])) {
                         </div>
                         <div class="mb-3">
                             <label for="telegram_id" class="form-label">ID Telegram (ห้ามซ้ำ)</label>
-                            <input type="text" name="telegram_id" class="form-control" id="telegram_id">
+                            <input type="number" name="telegram_id" class="form-control" id="telegram_id">
                         </div>
                         <div class="mb-3">
                             <label for="position_id" class="form-label">บทบาท</label>
@@ -547,7 +547,7 @@ if (isset($_GET['id'])) {
                         </div>
                         <div class="mb-3">
                             <label for="phone" class="form-label">เบอร์โทรศัพท์ (ห้ามซ้ำ)</label>
-                            <input type="text" name="phone" id="edit_phone" class="form-control">
+                            <input type="number" name="phone" id="edit_phone" class="form-control">
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">G-mail (ห้ามซ้ำ)</label>
@@ -555,7 +555,7 @@ if (isset($_GET['id'])) {
                         </div>
                         <div class="mb-3">
                             <label for="telegram_id" class="form-label">ID Telegram (ห้ามซ้ำ)</label>
-                            <input type="text" name="telegram_id" class="form-control" id="edit_telegram_id">
+                            <input type="number" name="telegram_id" class="form-control" id="edit_telegram_id">
                         </div>
                         <div class="mb-3">
                             <label for="position_id" class="form-label">บทบาท</label>

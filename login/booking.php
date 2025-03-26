@@ -182,7 +182,7 @@ if (isset($_GET['id'])) {
 
     /* Dropdown menu styling */
     .nav-item .dropdown-menu {
-        background-color: #343a40;
+        background-color: rgb(1, 20, 69);
         color: #ffffff;
     }
 
@@ -212,7 +212,7 @@ if (isset($_GET['id'])) {
 
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark p-3" style="background-color: #010f33;">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -302,7 +302,7 @@ if (isset($_GET['id'])) {
 
 
     <div class="full-height">
-        <div class="text-center bg-dark">
+        <div class="text-center" style="background-color: #010f33;">
             <div style="font-size: 20px; width: 100%; text-align: left;">รายการห้อง</div>
             <?php
             // ตรวจสอบว่า role_id ของผู้ใช้เป็น Admin หรือไม่

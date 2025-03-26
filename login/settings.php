@@ -327,7 +327,7 @@ $result = $conn->query($sql);
 
     /* Dropdown menu styling */
     .nav-item .dropdown-menu {
-        background-color: #343a40;
+        background-color: #010f33;
         color: #ffffff;
     }
 
@@ -363,7 +363,7 @@ $result = $conn->query($sql);
 
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark p-3" style="background-color: #010f33;">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -451,7 +451,7 @@ $result = $conn->query($sql);
     </nav>
 
     <div class="full-height">
-        <div class="text-center bg-dark">
+        <div class="text-center" style="background-color: #010f33;">
             <div style="font-size: 20px">สถิติ</div>
         </div>
         <div class="container-custom">

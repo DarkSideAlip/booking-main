@@ -413,7 +413,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* Dropdown menu styling */
     .nav-item .dropdown-menu {
-        background-color: #343a40;
+        background-color: rgb(1, 20, 69);
         color: #ffffff;
     }
 
@@ -430,7 +430,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark p-3" style="background-color: #010f33;">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -517,7 +517,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </nav>
 
     <div class="full-height">
-        <div class="text-center bg-dark">
+        <div class="text-center" style="background-color: #010f33;">
             <div style="font-size: 20px">รายงาน</div>
         </div>
         <div class="container-custom">
@@ -609,71 +609,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <?php endif; ?>
                         </td>
                         <td>
-                            <!-- ปุ่มเปิด modal -->
-                            <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal"
-                                data-bs-target="#detailModal<?php echo $row['Booking_ID']; ?>">
-                                รายละเอียด
+                            <!-- ปุ่มรายละเอียด (แสดงสำหรับทุกสถานะ) -->
+                            <button type="button" class="btn btn-outline-dark btn-sm ms-2 detail-btn"
+                                data-id="<?php echo $row['Booking_ID']; ?>">
+                                <i class="fas fa-info-circle"></i>
                             </button>
-
-                            <!-- Modal แสดงรายละเอียด (เอา HTML ของตารางที่แสดงรายละเอียดมาแทรกโดยตรง) -->
-                            <div class="modal fade" id="detailModal<?php echo $row['Booking_ID']; ?>" tabindex="-1"
-                                aria-labelledby="detailModalLabel<?php echo $row['Booking_ID']; ?>" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title"
-                                                id="detailModalLabel<?php echo $row['Booking_ID']; ?>">รายละเอียด</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <?php
-                                                // สมมติว่า $row มีข้อมูลการจองของรายการนั้นอยู่แล้ว
-                                                echo "<table class='table table-bordered'>";
-                                                echo "<tr><th>หัวข้อประชุม</th><td>" . $row['Topic_Name'] . "</td></tr>";
-                                                echo "<tr><th>วันที่และเวลา</th><td>" . $row['Date_Start'] . ' ' . $row['Time_Start'] . ' - ' . $row['Time_End'] . "</td></tr>";
-                                                echo "<tr><th>จำนวนผู้เข้าประชุม</th><td>" . $row['Attendee_Count'] . ' คน ' . "</td></tr>";
-                                                echo "<tr><th>รายละเอียดการประชุม</th><td>" . $row['Booking_Detail'] . "</td></tr>";
-
-                                                
-                                                if (!empty($row['Booking_File_Path'])) {
-                                                    echo "<tr>
-                                                            <th>รูปที่อัปโหลด</th>
-                                                            <td>
-                                                                <img id='bookingImage' src='" . $row['Booking_File_Path'] . "' 
-                                                                    style='max-width:250px; height:auto; cursor:pointer;'
-                                                                    alt='Uploaded Image'>
-                                                            </td>
-                                                        </tr>";
-                                                } else {
-                                                    echo "<tr><th>รูปที่อัปโหลด</th><td>ไม่มีไฟล์แนบ</td></tr>";
-                                                }
-
-
-                                                echo "</table>";
-                                                ?>
-                                        </div>
-                                        <!-- Modal สำหรับแสดงรูปภาพขยายใหญ่ -->
-                                        <div class="modal fade" id="imageModal" tabindex="-1"
-                                            aria-labelledby="imageModalLabel" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered modal-lg">
-                                                <div class="modal-content">
-                                                    <div class="modal-body p-0">
-                                                        <img id="modalImage" src="" class="img-fluid w-100"
-                                                            alt="Enlarged Uploaded Image">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary"
-                                                data-bs-dismiss="modal">ปิด</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-
 
                             <?php if ((int)$row['Status_ID'] === 1): ?>
                             <!-- ปุ่มอนุมัติระยะแรก -->
@@ -797,12 +737,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <!-- Modal สำหรับแสดงรูปภาพขยายใหญ่ (วางไว้ภายนอก loop ของตาราง) -->
-    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+    <!-- Modal สำหรับแสดงรายละเอียดการจอง -->
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-body p-0">
-                    <img id="modalImage" src="" class="img-fluid w-100" alt="Enlarged Uploaded Image">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="detailModalLabel">รายละเอียดการจอง</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- เนื้อหาจะแสดงที่นี่หลังโหลดจาก room_detail_upcom.php -->
+                    Loading...
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                 </div>
             </div>
         </div>
@@ -810,33 +758,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
 
+
     <!-- JavaScript -->
-    <script src="js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/2.1.7/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.1.7/js/dataTables.bootstrap5.js"></script>
     <script>
     $(document).ready(function() {
         $('#member-table').dataTable();
-    });
-    // รีเฟรช DataTables หลังลบข้อมูล
-    $('#member-table').DataTable().ajax.reload(null, false);
+        // (ถ้าไม่ใช้ Ajax ของ DataTables ให้ลบบรรทัดต่อไปนี้)
+        // $('#member-table').DataTable().ajax.reload(null, false);
 
-    $('#detailModal<?php echo $row['Booking_ID']; ?>').on('shown.bs.modal', function() {
-        $("#modalBodyContent<?php echo $row['Booking_ID']; ?>").load(
-            "get_booking_detail.php?id=<?php echo $row['Booking_ID']; ?>");
-    });
-
-    // แนบ event listener ให้กับทุก element ที่มี class "bookingImage"
-    document.querySelectorAll('.bookingImage').forEach(function(img) {
-        img.addEventListener('click', function() {
-            var modalImage = document.getElementById('modalImage');
-            modalImage.src = this.src; // กำหนด src ให้กับภาพใน modal
-            var imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-            imageModal.show();
+        $('.detail-btn').on('click', function() {
+            var bookingId = $(this).data('id');
+            $('#detailModal .modal-body').html('Loading...');
+            $.ajax({
+                url: 'room_detail_upcom.php',
+                type: 'GET',
+                data: {
+                    id: bookingId
+                },
+                success: function(response) {
+                    $('#detailModal .modal-body').html(response);
+                },
+                error: function() {
+                    $('#detailModal .modal-body').html('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+                }
+            });
+            var detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+            detailModal.show();
         });
     });
     </script>
+
 
 </body>
 

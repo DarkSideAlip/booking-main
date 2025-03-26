@@ -296,7 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* Dropdown menu styling */
     .nav-item .dropdown-menu {
-        background-color: #343a40;
+        background-color: rgb(1, 20, 69);
         color: #ffffff;
     }
 
@@ -323,7 +323,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark p-3" style="background-color: #010f33;">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -403,7 +403,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </nav>
 
     <div class="full-height">
-        <div class="text-center bg-dark">
+        <div class="text-center" style="background-color: #010f33;">
             <div style="font-size: 20px">แก้ไขข้อมูลผู้ใช้งาน</div>
         </div>
         <div class="container container-custom">
@@ -471,12 +471,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="mb-3">
                     <label for="telegram_id" class="form-label">Telegram ID</label>
-                    <input type="text" id="telegram_id" class="form-control" name="telegram_id" value="<?php echo $telegram_id; ?>"
+                    <input type="number" id="telegram_id" class="form-control" name="telegram_id" value="<?php echo $telegram_id; ?>"
                         >
                 </div>
                 <div class="mb-3">
                     <label for="phone" class="form-label">เบอร์โทรศัพท์</label>
-                    <input type="text" id="phone" class="form-control" name="phone" value="<?php echo $phone; ?>"
+                    <input type="number" id="phone" class="form-control" name="phone" value="<?php echo $phone; ?>"
                         >
                 </div>
 

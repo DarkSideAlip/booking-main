@@ -147,7 +147,7 @@ $result = $conn->query($sql);
 
     /* Dropdown menu styling */
     .nav-item .dropdown-menu {
-        background-color: #343a40;
+        background-color: rgb(1, 20, 69);
         color: #ffffff;
     }
 
@@ -202,7 +202,7 @@ $result = $conn->query($sql);
 
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark p-3" style="background-color: #010f33;">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -289,7 +289,7 @@ $result = $conn->query($sql);
     </nav>
 
     <div class="full-height">
-        <div class="text-center bg-dark">
+        <div class="text-center"style="background-color: #010f33;">
             <div style="font-size: 20px">รายการอนุมัติ</div>
         </div>
         <div class="container-custom">
@@ -346,6 +346,10 @@ $result = $conn->query($sql);
                                 <?php endif; ?>
                             </td>
                             <td>
+                                <button type="button" class="btn btn-outline-dark btn-sm detail-btn"
+                                    data-id="<?php echo $row['Booking_ID']; ?>">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
                                 <?php if (isset($_SESSION['personnel_id']) && $_SESSION['personnel_id'] == $row['personnel_id']): ?>
                                 <a href="delete_booking_active.php?id=<?php echo $row['Booking_ID']; ?>"
                                     class="btn btn-outline-danger btn-sm"
@@ -363,6 +367,24 @@ $result = $conn->query($sql);
         </div>
     </div>
 
+    <!-- Modal สำหรับแสดงรายละเอียดห้อง -->
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="detailModalLabel">รายละเอียดห้อง</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- เนื้อหาจะถูกโหลดมาจาก room_detail_upcom.php ผ่าน AJAX -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 
 
@@ -374,6 +396,31 @@ $result = $conn->query($sql);
     <script>
     $(document).ready(function() {
         $('#member-table').DataTable(); // ใช้ DataTables แบบพื้นฐาน
+    });
+
+    $(document).ready(function() {
+        $('.detail-btn').on('click', function() {
+            var bookingId = $(this).data('id');
+            // แสดงข้อความกำลังโหลดใน modal body
+            $('#detailModal .modal-body').html('Loading...');
+            // ทำการ AJAX request ไปยัง room_detail_upcom.php โดยส่ง booking id
+            $.ajax({
+                url: 'room_detail_active.php',
+                type: 'GET',
+                data: {
+                    id: bookingId
+                },
+                success: function(response) {
+                    $('#detailModal .modal-body').html(response);
+                },
+                error: function() {
+                    $('#detailModal .modal-body').html('Error loading details.');
+                }
+            });
+            // แสดง modal dialog
+            var modal = new bootstrap.Modal(document.getElementById('detailModal'));
+            modal.show();
+        });
     });
     </script>
 

@@ -141,7 +141,7 @@ $room_dot_color = isset($rooms[0]['Dot_Color']) ? $rooms[0]['Dot_Color'] : '#ccc
 
     /* Dropdown menu styling */
     .nav-item .dropdown-menu {
-        background-color: #343a40;
+        background-color: rgb(1, 20, 69);
         color: #ffffff;
     }
 
@@ -357,7 +357,7 @@ $room_dot_color = isset($rooms[0]['Dot_Color']) ? $rooms[0]['Dot_Color'] : '#ccc
 
     /* ไฮไลต์วันที่ปัจจุบัน */
     .current-day {
-        background-color: black;
+        background-color: #010f33;
         color: white;
         font-weight: bold;
     }
@@ -459,7 +459,7 @@ $room_dot_color = isset($rooms[0]['Dot_Color']) ? $rooms[0]['Dot_Color'] : '#ccc
 
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <nav class="navbar navbar-expand-lg navbar-dark p-3" style="background-color: #010f33;">
         <div class="container-fluid">
             <a href="main.php" class="navbar-brand d-flex align-items-center">
                 <img class="responsive-img" src="LOGO.png" alt="system booking" width="45" height="45">
@@ -588,7 +588,7 @@ $room_dot_color = isset($rooms[0]['Dot_Color']) ? $rooms[0]['Dot_Color'] : '#ccc
 
 
     <div class="full-height">
-        <div class="text-center bg-dark">
+        <div class="text-center" style="background-color: #010f33;">
             <div class="calendar-header">
                 <h2 id="month-year"></h2>
                 <div class="navigation">
@@ -617,7 +617,7 @@ $room_dot_color = isset($rooms[0]['Dot_Color']) ? $rooms[0]['Dot_Color'] : '#ccc
     </div>
 
     <div class="full-height2">
-        <div class="text-center2 bg-dark">
+        <div class="text-center2" style="background-color: #010f33;">
             <div style="font-size: 20px">Dashboard</div>
         </div>
         <div class="container-custom-2">
